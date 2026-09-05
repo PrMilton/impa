@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor IMPA 6.7: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
+    <title>Gestor IMPA 6.8: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/loguito.png?alt=media&amp;token=14b61179-dfb8-4fb6-9501-023664b089cb">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -909,6 +909,7 @@
         let membersRegistryView = 'people';
         let memberHierarchyFilter = '';
         let memberCardDensity = localStorage.getItem('member_card_density') || 'card';
+        let memberReturnState = null;
 
         // Fechas
         let currentDate = new Date(); 
@@ -1665,7 +1666,7 @@
             window.open(url, '_blank', 'noopener,noreferrer');
         };
 
-        window.newMemberForm = function() {
+        window.newMemberForm = function(shouldFocus = true) {
             document.getElementById('member-form')?.reset();
             document.getElementById('member-id').value = '';
             document.getElementById('member-status').value = 'activo';
@@ -1677,12 +1678,22 @@
             populateRelatedPeople();
             renderRelationshipDraft();
             updateUnifiedRelationshipPanel();
-            document.getElementById('member-name')?.focus();
+            if (shouldFocus) document.getElementById('member-name')?.focus();
         };
 
         window.editMember = function(id) {
             const member = membersRegistry.find(item => item.id === id);
             if (!member) return;
+            const membersScroller = document.getElementById('vista-miembros');
+            memberReturnState = {
+                memberId:id,
+                scrollTop:membersScroller?.scrollTop || 0,
+                view:membersRegistryView,
+                hierarchyFilter:memberHierarchyFilter,
+                density:memberCardDensity,
+                query:document.getElementById('member-search')?.value || '',
+                status:document.getElementById('member-status-filter')?.value || ''
+            };
             document.getElementById('member-id').value = member.id;
             document.getElementById('member-name').value = member.name || '';
             document.getElementById('member-birth').value = member.birthDate || '';
@@ -1777,6 +1788,7 @@
             event.preventDefault();
             const id = document.getElementById('member-id').value || createPersonId();
             const existingIndex = membersRegistry.findIndex(item => item.id === id);
+            const returnState = existingIndex >= 0 && memberReturnState?.memberId === id ? {...memberReturnState} : null;
             const previous = existingIndex >= 0 ? membersRegistry[existingIndex] : {};
             const member = {
                 ...previous, id,
@@ -1853,10 +1865,23 @@
             if (!isEligibleForResponsibilities(member)) removeIneligiblePersonnelCards();
             syncMemberNamesToPersonnel();
             syncPersonalToCartelera(false);
+            if (returnState) {
+                membersRegistryView = returnState.view;
+                memberHierarchyFilter = returnState.hierarchyFilter;
+                memberCardDensity = returnState.density;
+                document.getElementById('member-search').value = returnState.query;
+                document.getElementById('member-status-filter').value = returnState.status;
+                updateMemberSearchClear();
+            }
             renderMembersRegistry();
             renderDashboard();
             saveToCloud();
-            newMemberForm();
+            newMemberForm(false);
+            if (returnState) requestAnimationFrame(() => requestAnimationFrame(() => {
+                const membersScroller = document.getElementById('vista-miembros');
+                if (membersScroller) membersScroller.scrollTop = returnState.scrollTop;
+                memberReturnState = null;
+            }));
             showToast('Miembro guardado y equipos vinculados', 'success');
         };
 
@@ -2113,7 +2138,7 @@
         };
 
         window.exportMembersJson = function() {
-            const blob = new Blob([JSON.stringify({version:'6.7', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
+            const blob = new Blob([JSON.stringify({version:'6.8', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `Registro_Miembros_${new Date().toISOString().slice(0,10)}.json`; link.click();
             URL.revokeObjectURL(url);
