@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor IMPA 6.8: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
+    <title>Gestor IMPA 6.9: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/loguito.png?alt=media&amp;token=14b61179-dfb8-4fb6-9501-023664b089cb">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -479,13 +479,13 @@
                     </div>
                 </section>
 
-                <div class="grid grid-cols-1 xl:grid-cols-[390px_1fr] gap-5 items-start">
-                    <section id="member-form-card" class="bg-white dark:bg-gray-800 rounded-3xl shadow-md border border-slate-200 dark:border-gray-700 overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:flex xl:flex-col">
+                <div class="grid grid-cols-1 lg:grid-cols-[370px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)] gap-5 items-start">
+                    <section id="member-form-card" class="bg-white dark:bg-gray-800 rounded-3xl shadow-md border border-slate-200 dark:border-gray-700 overflow-hidden lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:flex lg:flex-col">
                         <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center shrink-0 bg-white dark:bg-gray-800 z-10">
                             <div><h3 id="member-form-title" class="font-extrabold text-lg">Nuevo miembro</h3><p class="text-xs text-gray-500">Los datos se sincronizan con Firebase.</p></div>
                             <div class="flex items-center gap-1"><button type="button" onclick="document.getElementById('member-form').requestSubmit()" class="px-3 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-extrabold shadow" title="Guardar miembro"><i class="fas fa-floppy-disk mr-1"></i>Guardar</button><button type="button" onclick="newMemberForm()" class="p-2 text-gray-400 hover:text-blue-600" title="Limpiar formulario"><i class="fas fa-rotate"></i></button></div>
                         </div>
-                        <form id="member-form" onsubmit="saveMember(event)" class="p-5 space-y-4 xl:overflow-y-auto custom-scroll">
+                        <form id="member-form" onsubmit="saveMember(event)" class="p-5 space-y-4 lg:overflow-y-auto custom-scroll">
                             <input type="hidden" id="member-id">
                             <div><label class="member-label">Nombre completo *</label><input id="member-name" required class="member-input member-title-case" placeholder="Nombre y apellido"></div>
                             <div class="grid grid-cols-2 gap-3">
@@ -1725,7 +1725,10 @@
             populateRelatedPeople(member.id);
             renderRelationshipDraft();
             updateUnifiedRelationshipPanel();
-            document.getElementById('member-form-card')?.scrollIntoView({behavior:'smooth', block:'start'});
+            document.getElementById('member-form').scrollTop = 0;
+            // En escritorio el panel permanece a la vista y la lista no se mueve.
+            // En móvil, donde no hay espacio para dos columnas, se acerca el formulario.
+            if (window.innerWidth < 1024) document.getElementById('member-form-card')?.scrollIntoView({behavior:'smooth', block:'start'});
         };
 
         function reverseRelationship(type) {
@@ -2138,7 +2141,7 @@
         };
 
         window.exportMembersJson = function() {
-            const blob = new Blob([JSON.stringify({version:'6.8', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
+            const blob = new Blob([JSON.stringify({version:'6.9', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `Registro_Miembros_${new Date().toISOString().slice(0,10)}.json`; link.click();
             URL.revokeObjectURL(url);
