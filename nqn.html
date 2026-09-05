@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor IMPA 6.5: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
+    <title>Gestor IMPA 6.6: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/loguito.png?alt=media&amp;token=14b61179-dfb8-4fb6-9501-023664b089cb">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -471,6 +471,8 @@
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <button onclick="newMemberForm()" class="px-4 py-2.5 rounded-xl bg-white text-blue-900 font-bold shadow"><i class="fas fa-user-plus mr-2"></i>Nuevo miembro</button>
+                            <button onclick="document.getElementById('google-contacts-file').click()" class="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold"><i class="fab fa-google mr-2"></i>Importar contactos</button>
+                            <input id="google-contacts-file" type="file" accept=".csv,text/csv" class="hidden" onchange="loadGoogleContactsCsv(event)">
                             <button onclick="exportMembersExcel()" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 font-bold"><i class="fas fa-file-excel mr-2"></i>Excel</button>
                             <button onclick="exportMembersJson()" class="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 font-bold"><i class="fas fa-download mr-2"></i>Respaldo</button>
                         </div>
@@ -800,6 +802,27 @@
         </div>
     </div>
 
+    <!-- Importación asistida de Google Contacts -->
+    <div id="contacts-import-modal" class="fixed inset-0 bg-black/65 hidden z-[110] flex items-center justify-center p-3 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl h-[92vh] overflow-hidden flex flex-col border dark:border-gray-700">
+            <div class="px-5 py-4 border-b dark:border-gray-700 flex justify-between items-start gap-4 bg-amber-50 dark:bg-gray-900">
+                <div><h3 class="font-extrabold text-lg text-amber-950 dark:text-amber-200"><i class="fab fa-google mr-2"></i>Importar contactos</h3><p class="text-xs text-slate-600 dark:text-slate-400">Revisá las coincidencias antes de combinarlas con Firebase.</p></div>
+                <button onclick="closeContactsImport()" class="text-gray-400 hover:text-red-500"><i class="fas fa-xmark text-xl"></i></button>
+            </div>
+            <div class="px-5 py-3 border-b dark:border-gray-700 grid grid-cols-2 md:grid-cols-5 gap-2 bg-white dark:bg-gray-800">
+                <div class="member-stat"><strong id="import-total">0</strong><span>Contactos</span></div>
+                <div class="member-stat"><strong id="import-exact">0</strong><span>Exactos</span></div>
+                <div class="member-stat"><strong id="import-review">0</strong><span>Revisar</span></div>
+                <div class="member-stat"><strong id="import-new">0</strong><span>Nuevos</span></div>
+                <div class="member-stat"><strong id="import-ignore">0</strong><span>Ignorados</span></div>
+            </div>
+            <div class="px-5 py-3 border-b dark:border-gray-700 flex flex-col sm:flex-row gap-2"><input id="contact-import-search" oninput="renderContactImportRows()" class="member-input flex-1" placeholder="Buscar nombre o teléfono"><select id="contact-import-filter" onchange="renderContactImportRows()" class="member-input sm:w-48"><option value="">Todas las decisiones</option><option value="review">Pendientes</option><option value="merge">Combinar</option><option value="create">Crear miembro</option><option value="ignore">Ignorar</option></select></div>
+            <div class="px-5 py-2 text-[11px] text-slate-500 bg-slate-50 dark:bg-gray-900/50"><b>Regla segura:</b> solo las coincidencias exactas se preseleccionan para combinar. Los alias y nombres parecidos requieren tu decisión.</div>
+            <div id="contacts-import-rows" class="p-4 overflow-y-auto flex-1 space-y-2"></div>
+            <div class="px-5 py-4 border-t dark:border-gray-700 flex flex-col sm:flex-row justify-between gap-3 bg-white dark:bg-gray-900"><p id="contacts-import-warning" class="text-xs text-amber-700 dark:text-amber-300 self-center"></p><div class="flex justify-end gap-2"><button onclick="closeContactsImport()" class="px-4 py-2 border rounded-xl text-sm font-bold">Cancelar</button><button onclick="applyContactsImport()" class="px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-xl text-sm font-bold"><i class="fas fa-cloud-arrow-up mr-2"></i>Aplicar decisiones</button></div></div>
+        </div>
+    </div>
+
     <!-- Guía editable y avisos del culto de oración -->
     <div id="prayer-guide-modal" class="fixed inset-0 bg-black/60 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col border dark:border-gray-700">
@@ -877,6 +900,7 @@
         let appData = JSON.parse(JSON.stringify(defaultAppData));
         let membersRegistry = [];
         let memberRelationshipDraft = [];
+        let contactImportDraft = [];
         let membersRegistryView = 'people';
 
         // Fechas
@@ -1211,6 +1235,135 @@
             return String(value || '').replace(/(^|[\s\-'.])([a-záéíóúüñ])/giu, (match, separator, letter) => separator + letter.toUpperCase());
         }
 
+        function parseCsvRows(text) {
+            const rows = []; let row = []; let field = ''; let quoted = false;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (quoted) {
+                    if (char === '"' && text[i + 1] === '"') { field += '"'; i++; }
+                    else if (char === '"') quoted = false;
+                    else field += char;
+                } else if (char === '"') quoted = true;
+                else if (char === ',') { row.push(field); field = ''; }
+                else if (char === '\n') { row.push(field.replace(/\r$/, '')); rows.push(row); row = []; field = ''; }
+                else field += char;
+            }
+            if (field || row.length) { row.push(field.replace(/\r$/, '')); rows.push(row); }
+            const headers = (rows.shift() || []).map(item => item.replace(/^\uFEFF/, '').trim());
+            return rows.filter(values => values.some(Boolean)).map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] || ''])));
+        }
+
+        function cleanImportedContactName(value) {
+            return titleCaseWords(String(value || '').replace(/^\s*(hna|hno|hermana|hermano|pr|pastor|pastora)\.?\s+/i, '').replace(/\s+/g, ' ').trim());
+        }
+
+        function contactMatchKey(value) {
+            return normalizePersonName(cleanImportedContactName(value)).replace(/\b(nuevo|nueva)\b/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function contactSimilarity(left, right) {
+            const a = contactMatchKey(left), b = contactMatchKey(right);
+            if (!a || !b) return 0;
+            if (a === b) return 1;
+            const aTokens = new Set(a.split(' ')), bTokens = new Set(b.split(' '));
+            const common = [...aTokens].filter(token => bTokens.has(token)).length;
+            const tokenScore = common / Math.max(aTokens.size, bTokens.size);
+            const matrix = Array.from({length:a.length + 1}, (_, i) => [i]);
+            for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) matrix[i][j] = Math.min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j-1]+(a[i-1] === b[j-1] ? 0 : 1));
+            const editScore = 1 - matrix[a.length][b.length] / Math.max(a.length, b.length);
+            return Math.max(editScore, tokenScore, (a.includes(b) || b.includes(a)) && Math.min(a.length,b.length) >= 4 ? 0.82 : 0);
+        }
+
+        function suggestedMembersForContact(name) {
+            return membersRegistry.map(member => ({memberId:member.id, name:member.name, score:contactSimilarity(name, member.name)})).sort((a,b) => b.score - a.score).slice(0,3);
+        }
+
+        window.loadGoogleContactsCsv = async function(event) {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (!file) return;
+            try {
+                const rows = parseCsvRows(await file.text());
+                if (!rows.length || !('First Name' in rows[0]) || !('Phone 1 - Value' in rows[0])) throw new Error('Formato no reconocido');
+                contactImportDraft = rows.map((row, index) => {
+                    const originalName = [row['First Name'], row['Middle Name'], row['Last Name']].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+                    const name = cleanImportedContactName(originalName);
+                    const phones = String(row['Phone 1 - Value'] || '').split(':::').map(phone => phone.trim()).filter(Boolean);
+                    const suggestions = suggestedMembersForContact(name);
+                    const exact = suggestions[0]?.score === 1;
+                    return {index, originalName, name, phones, selectedPhone:phones[0] || '', email:row['E-mail 1 - Value'] || '', birthday:row.Birthday || '', suggestions, memberId:exact ? suggestions[0].memberId : (suggestions[0]?.score >= .72 ? suggestions[0].memberId : ''), action:exact ? 'merge' : 'review'};
+                });
+                document.getElementById('contact-import-search').value = '';
+                document.getElementById('contact-import-filter').value = '';
+                document.getElementById('contacts-import-modal').classList.remove('hidden');
+                renderContactImportRows();
+            } catch (error) { showToast('No se pudo leer el CSV de Google Contacts.', 'error'); }
+        };
+
+        window.updateContactImport = function(index, field, value) {
+            const item = contactImportDraft[index]; if (!item) return;
+            item[field] = value;
+            if (field === 'memberId' && value && item.action === 'review') item.action = 'merge';
+            renderContactImportRows();
+        };
+
+        window.renderContactImportRows = function() {
+            const search = normalizePersonName(document.getElementById('contact-import-search')?.value || '');
+            const filter = document.getElementById('contact-import-filter')?.value || '';
+            const visible = contactImportDraft.filter(item => (!filter || item.action === filter) && (!search || normalizePersonName(`${item.name} ${item.phones.join(' ')}`).includes(search)));
+            const container = document.getElementById('contacts-import-rows');
+            container.innerHTML = visible.map(item => {
+                const confidence = item.suggestions[0]?.score === 1 ? ['Coincidencia exacta','text-emerald-600'] : item.suggestions[0]?.score >= .72 ? ['Posible coincidencia','text-amber-600'] : ['Sin coincidencia segura','text-slate-500'];
+                const memberOptions = [`<option value="">Seleccionar miembro…</option>`, ...item.suggestions.map(suggestion => `<option value="${escapeMemberHtml(suggestion.memberId)}" ${item.memberId === suggestion.memberId ? 'selected' : ''}>${escapeMemberHtml(suggestion.name)} · ${Math.round(suggestion.score*100)}%</option>`), `<option disabled>──────────</option>`, ...membersRegistry.filter(member => !item.suggestions.some(s => s.memberId === member.id)).sort((a,b)=>a.name.localeCompare(b.name,'es')).map(member => `<option value="${escapeMemberHtml(member.id)}" ${item.memberId === member.id ? 'selected' : ''}>${escapeMemberHtml(member.name)}</option>`)].join('');
+                const phoneControl = item.phones.length > 1 ? `<select onchange="updateContactImport(${item.index},'selectedPhone',this.value)" class="member-input text-xs">${item.phones.map(phone => `<option ${item.selectedPhone === phone ? 'selected' : ''}>${escapeMemberHtml(phone)}</option>`).join('')}</select><small class="text-[9px] text-amber-600 font-bold">${item.phones.length} teléfonos disponibles</small>` : `<div class="text-xs font-bold text-slate-700 dark:text-slate-200">${escapeMemberHtml(item.selectedPhone || 'Sin teléfono')}</div>`;
+                return `<div class="grid grid-cols-1 lg:grid-cols-[1.1fr_.8fr_1.5fr_.8fr] gap-3 items-center rounded-xl border ${item.action === 'review' ? 'border-amber-200 bg-amber-50/50 dark:bg-amber-950/10' : 'border-slate-200 dark:border-gray-700'} p-3"><div class="min-w-0"><b class="block text-sm text-slate-900 dark:text-white">${escapeMemberHtml(item.name)}</b>${item.originalName !== item.name ? `<small class="block text-slate-400">Original: ${escapeMemberHtml(item.originalName)}</small>` : ''}<small class="font-bold ${confidence[1]}">${confidence[0]}</small></div><div>${phoneControl}</div><select onchange="updateContactImport(${item.index},'memberId',this.value)" class="member-input text-xs">${memberOptions}</select><select onchange="updateContactImport(${item.index},'action',this.value)" class="member-input text-xs font-bold"><option value="review" ${item.action==='review'?'selected':''}>Revisar</option><option value="merge" ${item.action==='merge'?'selected':''}>Combinar</option><option value="create" ${item.action==='create'?'selected':''}>Crear miembro</option><option value="ignore" ${item.action==='ignore'?'selected':''}>Ignorar</option></select></div>`;
+            }).join('') || '<div class="p-10 text-center text-slate-500">No hay contactos para este filtro.</div>';
+            const count = action => contactImportDraft.filter(item => item.action === action).length;
+            document.getElementById('import-total').textContent = contactImportDraft.length;
+            document.getElementById('import-exact').textContent = contactImportDraft.filter(item => item.suggestions[0]?.score === 1).length;
+            document.getElementById('import-review').textContent = count('review');
+            document.getElementById('import-new').textContent = count('create');
+            document.getElementById('import-ignore').textContent = count('ignore');
+            document.getElementById('contacts-import-warning').textContent = count('review') ? `${count('review')} contactos todavía requieren una decisión.` : 'Todas las filas tienen una decisión.';
+        };
+
+        window.closeContactsImport = function() {
+            document.getElementById('contacts-import-modal').classList.add('hidden');
+            contactImportDraft = [];
+        };
+
+        function addImportedPhone(member, phone) {
+            if (!phone) return;
+            const normalized = value => String(value || '').replace(/\D/g,'').replace(/^549?/,'');
+            if (!member.phone) { member.phone = phone; return; }
+            if (normalized(member.phone) === normalized(phone)) return;
+            member.alternatePhones = Array.isArray(member.alternatePhones) ? member.alternatePhones : [];
+            if (![member.phone, ...member.alternatePhones].some(existing => normalized(existing) === normalized(phone))) member.alternatePhones.push(phone);
+        }
+
+        window.applyContactsImport = function() {
+            const pending = contactImportDraft.filter(item => item.action === 'review');
+            if (pending.length) { showToast(`Quedan ${pending.length} contactos por revisar.`, 'error'); return; }
+            const invalidMerge = contactImportDraft.find(item => item.action === 'merge' && !item.memberId);
+            if (invalidMerge) { showToast(`Elegí el miembro correspondiente para ${invalidMerge.name}.`, 'error'); return; }
+            localStorage.setItem(`gestor_pre_contact_import_${Date.now()}`, JSON.stringify({lists, assignments, appData, membersRegistry}));
+            let merged = 0, created = 0;
+            contactImportDraft.forEach(item => {
+                if (item.action === 'merge') {
+                    const member = membersRegistry.find(candidate => candidate.id === item.memberId);
+                    if (!member) return;
+                    addImportedPhone(member, item.selectedPhone);
+                    if (!member.email && item.email) member.email = item.email;
+                    member.contactImportSource = 'Google Contacts'; member.contactImportedAt = Date.now(); member.updatedAt = Date.now(); merged++;
+                } else if (item.action === 'create') {
+                    membersRegistry.push({id:createPersonId(), name:item.name, phone:item.selectedPhone, alternatePhones:item.phones.filter(phone => phone !== item.selectedPhone), email:item.email || '', address:'', mapLocation:'', birthDate:'', documentType:'DNI', documentNumber:'', joinDate:'', baptismPlace:'', baptismDate:'', probationDate:'', communionDate:'', notes:'', status:'activo', membershipCategory:'', hierarchy:'congregacion', hierarchyMode:'manual', under14:false, exitDate:'', exitCause:'', familyName:'', relationships:[], createdAt:Date.now(), updatedAt:Date.now(), source:'google-contacts', contactImportSource:'Google Contacts'}); created++;
+                }
+            });
+            ensureRegistryLinks(); saveToCloud(); renderMembersRegistry(); closeContactsImport();
+            showToast(`Importación aplicada: ${merged} combinados y ${created} miembros nuevos.`, 'success');
+        };
+
         document.addEventListener('input', event => {
             if (!event.target.classList?.contains('member-title-case')) return;
             const start = event.target.selectionStart;
@@ -1281,6 +1434,7 @@
                 ['birthDate','phone','address','mapLocation','documentType','documentNumber','joinDate','baptismDate','baptismPlace','probationDate','communionDate','familyName','notes','exitDate','exitCause','membershipCategory','hierarchy','hierarchyMode'].forEach(field => {
                     if (!winner[field] && duplicate[field]) winner[field] = duplicate[field];
                 });
+                winner.alternatePhones = [...new Set([...(winner.alternatePhones || []), ...(duplicate.alternatePhones || [])])];
                 winner.under14 = winner.under14 || duplicate.under14;
                 winner.relationships = [...(winner.relationships || []), ...(duplicate.relationships || [])];
                 changed = true;
@@ -1314,6 +1468,7 @@
                 if (!member.hierarchy) { member.hierarchy = 'congregacion'; changed = true; }
                 if (!member.hierarchyMode) { member.hierarchyMode = member.source === 'personal' ? 'automatic' : 'manual'; changed = true; }
                 if (typeof member.phone !== 'string') { member.phone = ''; changed = true; }
+                if (!Array.isArray(member.alternatePhones)) { member.alternatePhones = []; changed = true; }
                 if (typeof member.mapLocation !== 'string') { member.mapLocation = ''; changed = true; }
                 if (typeof member.under14 !== 'boolean') { member.under14 = isMemberUnder14(member); changed = true; }
             });
@@ -1871,7 +2026,7 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     ${detailValue('Nacimiento', member.birthDate, 'fa-cake-candles')}
-                    ${detailValue('Teléfono / WhatsApp', member.phone, 'fa-phone')}
+                    ${detailValue('Teléfono / WhatsApp', [member.phone, ...(member.alternatePhones || [])].filter(Boolean).join(' · '), 'fa-phone')}
                     ${detailValue('Domicilio', member.address, 'fa-location-dot')}
                     ${(member.mapLocation || member.address) ? `<div class="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 p-3"><div class="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700 dark:text-emerald-300 mb-2"><i class="fas fa-map-location-dot mr-1"></i>Ubicación</div><a href="${escapeMemberHtml(memberMapUrl(member))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300 hover:underline">Abrir en Google Maps <i class="fas fa-arrow-up-right-from-square"></i></a></div>` : ''}
                     ${detailValue('Documento', [member.documentType, member.documentNumber].filter(Boolean).join(' '), 'fa-id-card')}
@@ -1907,7 +2062,7 @@
         };
 
         window.exportMembersJson = function() {
-            const blob = new Blob([JSON.stringify({version:'6.5', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
+            const blob = new Blob([JSON.stringify({version:'6.6', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `Registro_Miembros_${new Date().toISOString().slice(0,10)}.json`; link.click();
             URL.revokeObjectURL(url);
@@ -1917,7 +2072,7 @@
             if (!window.XLSX) { showToast('No se pudo cargar el exportador Excel', 'error'); return; }
             const rows = [...membersRegistry].sort((a,b) => a.name.localeCompare(b.name, 'es')).map((member, index) => ({
                 'Nº': index + 1, 'Nombre': member.name, 'Nacimiento': member.birthDate || '', 'Edad': calculateMemberAge(member.birthDate),
-                'Teléfono': member.phone || '', 'Domicilio': member.address || '', 'Ubicación Maps': member.mapLocation || '', 'Tipo Doc.': member.documentType || '', 'Documento': member.documentNumber || '',
+                'Teléfono': member.phone || '', 'Teléfonos alternativos': (member.alternatePhones || []).join(' · '), 'Domicilio': member.address || '', 'Ubicación Maps': member.mapLocation || '', 'Tipo Doc.': member.documentType || '', 'Documento': member.documentNumber || '',
                 'Ingreso': member.joinDate || '', 'Bautismo': member.baptismDate || '', 'Lugar bautismo': member.baptismPlace || '',
                 'Llamado a Probando': member.probationDate || '', 'Plena comunión': member.communionDate || '',
                 'Estado': member.status || 'activo', 'Categoría': memberCategoryLabel(member.membershipCategory),
@@ -1929,7 +2084,7 @@
                 }).filter(Boolean).join('; '), 'Observaciones': member.notes || '', 'Fecha baja': member.exitDate || '', 'Causa baja': member.exitCause || ''
             }));
             const sheet = XLSX.utils.json_to_sheet(rows);
-            sheet['!cols'] = [{wch:5},{wch:30},{wch:12},{wch:6},{wch:20},{wch:30},{wch:42},{wch:10},{wch:16},{wch:10},{wch:12},{wch:24},{wch:15},{wch:15},{wch:12},{wch:24},{wch:18},{wch:16},{wch:28},{wch:42},{wch:42},{wch:12},{wch:24}];
+            sheet['!cols'] = [{wch:5},{wch:30},{wch:12},{wch:6},{wch:20},{wch:30},{wch:30},{wch:42},{wch:10},{wch:16},{wch:10},{wch:12},{wch:24},{wch:15},{wch:15},{wch:12},{wch:24},{wch:18},{wch:16},{wch:28},{wch:42},{wch:42},{wch:12},{wch:24}];
             const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, sheet, 'Miembros');
             XLSX.writeFile(book, `Registro_Miembros_${new Date().toISOString().slice(0,10)}.xlsx`);
         };
