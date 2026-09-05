@@ -145,7 +145,7 @@
 })();
 </script>
 <script>
-const IMPA_FS_DOC='https://firestore.googleapis.com/v1/projects/formulario-7d5cb/databases/(default)/documents/congregacion_data/mainData';
+const IMPA_FS_DOC='https://firestore.googleapis.com/v1/projects/ibmepa/databases/(default)/documents/ibmepa_data/main';
 async function impaRequest(url,options={}){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);try{const response=await fetch(url,{...options,signal:controller.signal,headers:{'Content-Type':'application/json',...(options.headers||{})}});if(!response.ok)throw new Error(`Firestore ${response.status}: ${await response.text()}`);return response.json()}finally{clearTimeout(timeout)}}
 function impaParse(doc,name,fallback){const raw=doc?.fields?.[name]?.stringValue;if(typeof raw!=='string')return fallback;try{return JSON.parse(raw)}catch{return fallback}}
 window.loadImpaAcademicData=async function(){const doc=await impaRequest(IMPA_FS_DOC);return window.impaAcademicData={exams:impaParse(doc,'instituteExams',{}),attempts:impaParse(doc,'instituteAttempts',{})}}
