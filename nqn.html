@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor IMPA 6.6: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
+    <title>Gestor IMPA 6.7: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/loguito.png?alt=media&amp;token=14b61179-dfb8-4fb6-9501-023664b089cb">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -480,12 +480,12 @@
                 </section>
 
                 <div class="grid grid-cols-1 xl:grid-cols-[390px_1fr] gap-5 items-start">
-                    <section id="member-form-card" class="bg-white dark:bg-gray-800 rounded-3xl shadow-md border border-slate-200 dark:border-gray-700 overflow-hidden xl:sticky xl:top-4">
-                        <div class="p-5 border-b dark:border-gray-700 flex justify-between items-center">
+                    <section id="member-form-card" class="bg-white dark:bg-gray-800 rounded-3xl shadow-md border border-slate-200 dark:border-gray-700 overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:flex xl:flex-col">
+                        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center shrink-0 bg-white dark:bg-gray-800 z-10">
                             <div><h3 id="member-form-title" class="font-extrabold text-lg">Nuevo miembro</h3><p class="text-xs text-gray-500">Los datos se sincronizan con Firebase.</p></div>
-                            <button type="button" onclick="newMemberForm()" class="text-gray-400 hover:text-blue-600" title="Limpiar formulario"><i class="fas fa-rotate"></i></button>
+                            <div class="flex items-center gap-1"><button type="button" onclick="document.getElementById('member-form').requestSubmit()" class="px-3 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-extrabold shadow" title="Guardar miembro"><i class="fas fa-floppy-disk mr-1"></i>Guardar</button><button type="button" onclick="newMemberForm()" class="p-2 text-gray-400 hover:text-blue-600" title="Limpiar formulario"><i class="fas fa-rotate"></i></button></div>
                         </div>
-                        <form id="member-form" onsubmit="saveMember(event)" class="p-5 space-y-4">
+                        <form id="member-form" onsubmit="saveMember(event)" class="p-5 space-y-4 xl:overflow-y-auto custom-scroll">
                             <input type="hidden" id="member-id">
                             <div><label class="member-label">Nombre completo *</label><input id="member-name" required class="member-input member-title-case" placeholder="Nombre y apellido"></div>
                             <div class="grid grid-cols-2 gap-3">
@@ -535,13 +535,18 @@
 
                     <section class="space-y-4">
                         <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-gray-700 space-y-3">
-                            <div class="flex p-1 rounded-xl bg-slate-100 dark:bg-gray-900 w-full sm:w-fit">
+                            <div class="flex flex-wrap p-1 rounded-xl bg-slate-100 dark:bg-gray-900 w-full gap-1">
                                 <button id="members-view-people" onclick="setMembersView('people')" class="px-4 py-2 rounded-lg bg-blue-700 text-white text-xs font-bold shadow"><i class="fas fa-user mr-1"></i>Personas</button>
                                 <button id="members-view-families" onclick="setMembersView('families')" class="px-4 py-2 rounded-lg text-slate-600 dark:text-gray-300 text-xs font-bold"><i class="fas fa-people-roof mr-1"></i>Familias</button>
+                                <span class="hidden sm:block w-px bg-slate-300 dark:bg-gray-700 mx-1"></span>
+                                <button data-member-hierarchy="diaconos" onclick="setMemberHierarchyFilter('diaconos')" class="member-hierarchy-filter px-3 py-2 rounded-lg text-slate-600 dark:text-gray-300 text-xs font-bold"><i class="fas fa-user-tie mr-1"></i>Diáconos</button>
+                                <button data-member-hierarchy="lideres" onclick="setMemberHierarchyFilter('lideres')" class="member-hierarchy-filter px-3 py-2 rounded-lg text-slate-600 dark:text-gray-300 text-xs font-bold"><i class="fas fa-people-group mr-1"></i>Líderes</button>
+                                <button data-member-hierarchy="congregacion" onclick="setMemberHierarchyFilter('congregacion')" class="member-hierarchy-filter px-3 py-2 rounded-lg text-slate-600 dark:text-gray-300 text-xs font-bold"><i class="fas fa-church mr-1"></i>Congregación</button>
                             </div>
                             <div class="flex flex-col sm:flex-row gap-3">
-                            <div class="relative flex-1"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i><input id="member-search" oninput="renderMembersRegistry()" class="member-input pl-11" placeholder="Buscar por persona, familia, documento o ministerio"></div>
+                            <div class="relative flex-1"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i><input id="member-search" oninput="updateMemberSearchClear(); renderMembersRegistry()" class="member-input pl-11 pr-11" placeholder="Buscar por persona, familia, teléfono, documento o ministerio"><button id="member-search-clear" onclick="clearMemberSearch()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-gray-700" title="Limpiar búsqueda"><i class="fas fa-xmark"></i></button></div>
                             <select id="member-status-filter" onchange="renderMembersRegistry()" class="member-input sm:w-44"><option value="">Todos los estados</option><option value="activo">Activos</option><option value="inactivo">Inactivos</option><option value="trasladado">Trasladados</option><option value="fallecido">Fallecidos</option></select>
+                            <div id="member-density-controls" class="flex p-1 rounded-xl bg-slate-100 dark:bg-gray-900 shrink-0"><button data-density="card" onclick="setMemberCardDensity('card')" class="member-density-btn px-3 py-2 rounded-lg text-xs" title="Tarjetas"><i class="fas fa-table-cells-large"></i></button><button data-density="list" onclick="setMemberCardDensity('list')" class="member-density-btn px-3 py-2 rounded-lg text-xs" title="Lista"><i class="fas fa-list"></i></button><button data-density="icon" onclick="setMemberCardDensity('icon')" class="member-density-btn px-3 py-2 rounded-lg text-xs" title="Íconos"><i class="fas fa-grip"></i></button></div>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -902,6 +907,8 @@
         let memberRelationshipDraft = [];
         let contactImportDraft = [];
         let membersRegistryView = 'people';
+        let memberHierarchyFilter = '';
+        let memberCardDensity = localStorage.getItem('member_card_density') || 'card';
 
         // Fechas
         let currentDate = new Date(); 
@@ -1887,16 +1894,30 @@
             showToast(`${member.name}: ${memberHierarchyLabel(member.hierarchy)}`, 'success');
         };
 
+        function memberWhatsAppUrl(member) {
+            const phone = whatsappNumber(member?.phone);
+            return phone ? `https://wa.me/${phone}` : '';
+        }
+
+        function memberContactActions(member, compact = false) {
+            const whatsapp = memberWhatsAppUrl(member);
+            const maps = memberMapUrl(member);
+            const size = compact ? 'w-8 h-8' : 'px-2.5 py-2';
+            return `<div class="flex items-center gap-1.5">${whatsapp ? `<a onclick="event.stopPropagation()" href="${escapeMemberHtml(whatsapp)}" target="_blank" rel="noopener noreferrer" class="${size} inline-flex items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-100" title="Abrir WhatsApp"><i class="fab fa-whatsapp"></i></a>` : ''}${maps ? `<a onclick="event.stopPropagation()" href="${escapeMemberHtml(maps)}" target="_blank" rel="noopener noreferrer" class="${size} inline-flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 hover:bg-blue-100" title="Abrir Google Maps"><i class="fas fa-location-arrow"></i></a>` : ''}</div>`;
+        }
+
         window.renderMembersRegistry = function() {
             const container = document.getElementById('members-registry-list');
             if (!container) return;
             const query = normalizePersonName(document.getElementById('member-search')?.value || '');
             const statusFilter = document.getElementById('member-status-filter')?.value || '';
-            const filtered = membersRegistry.filter(member => {
+            const baseFiltered = membersRegistry.filter(member => {
                 const roles = memberRoles(member.id).join(' ');
-                const haystack = normalizePersonName([member.name, member.familyName, member.documentNumber, roles].join(' '));
+                const haystack = normalizePersonName([member.name, member.familyName, member.phone, ...(member.alternatePhones || []), member.documentNumber, roles].join(' '));
                 return (!query || haystack.includes(query)) && (!statusFilter || member.status === statusFilter);
             }).sort((a,b) => a.name.localeCompare(b.name, 'es'));
+            const adults = baseFiltered.filter(member => !isMemberUnder14(member) && (!memberHierarchyFilter || (member.hierarchy || 'congregacion') === memberHierarchyFilter));
+            const minors = baseFiltered.filter(isMemberUnder14).filter(() => !memberHierarchyFilter || memberHierarchyFilter === 'congregacion');
             const renderMemberCard = member => {
                 const roles = memberRoles(member.id);
                 const relatives = (member.relationships || []).map(relation => {
@@ -1905,11 +1926,15 @@
                 }).join('');
                 const age = calculateMemberAge(member.birthDate);
                 const initials = member.name.split(/\s+/).filter(Boolean).slice(0,2).map(part => part[0]).join('').toUpperCase();
+                const phoneLine = member.phone ? `<p class="text-xs text-slate-600 dark:text-slate-300 mt-1"><i class="fas fa-phone mr-1 text-emerald-500"></i>${escapeMemberHtml(member.phone)}</p>` : '<p class="text-[10px] text-amber-600 mt-1">Teléfono pendiente</p>';
+                if (memberCardDensity === 'icon') return `<article onclick="openMemberDetail('${escapeMemberHtml(member.id)}')" class="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:shadow-md transition cursor-pointer p-3 text-center min-w-0"><div class="w-12 h-12 mx-auto rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-extrabold">${escapeMemberHtml(initials)}</div><h3 class="font-extrabold text-xs text-slate-800 dark:text-white mt-2 leading-tight truncate" title="${escapeMemberHtml(member.name)}">${escapeMemberHtml(member.name)}</h3><p class="text-[9px] text-slate-400 truncate">${escapeMemberHtml(member.phone || memberHierarchyLabel(member.hierarchy))}</p><div class="flex justify-center mt-2">${memberContactActions(member, true)}</div></article>`;
+                if (memberCardDensity === 'list') return `<article onclick="openMemberDetail('${escapeMemberHtml(member.id)}')" class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 hover:border-blue-300 hover:shadow-md transition cursor-pointer p-3"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-extrabold shrink-0">${escapeMemberHtml(initials)}</div><div class="min-w-0 flex-1"><h3 class="font-extrabold text-sm text-slate-800 dark:text-white truncate">${escapeMemberHtml(member.name)}</h3><p class="text-[10px] text-slate-500 truncate">${escapeMemberHtml(member.phone || 'Teléfono pendiente')}${member.familyName ? ` · ${escapeMemberHtml(member.familyName)}` : ''}</p></div><span class="hidden md:inline text-[9px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 font-bold uppercase">${escapeMemberHtml(memberHierarchyLabel(member.hierarchy))}</span>${memberContactActions(member, true)}<button onclick="event.stopPropagation(); editMember('${escapeMemberHtml(member.id)}')" class="w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50" title="Editar"><i class="fas fa-pen"></i></button></div></article>`;
                 return `<article onclick="openMemberDetail('${escapeMemberHtml(member.id)}')" class="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-blue-300 transition cursor-pointer p-4" title="Abrir ficha de contacto">
                     <div class="flex gap-3">
                         <div class="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center font-extrabold shrink-0">${escapeMemberHtml(initials)}</div>
                         <div class="min-w-0 flex-1"><div class="flex items-start justify-between gap-2"><div><h3 class="font-extrabold text-slate-800 dark:text-white leading-tight">${escapeMemberHtml(member.name)}</h3><p class="text-[10px] uppercase tracking-wider font-bold ${member.status === 'activo' ? 'text-emerald-600' : 'text-slate-500'}">${escapeMemberHtml(member.status || 'activo')}${age !== '' ? ` · ${age} años` : ''}${isMemberUnder14(member) ? ' · sin responsabilidades' : ''}</p><div class="flex flex-wrap gap-1 mt-1"><select onclick="event.stopPropagation()" onchange="event.stopPropagation(); changeMemberHierarchy('${escapeMemberHtml(member.id)}', this.value)" class="text-[9px] px-2 py-1 rounded-full border border-blue-200 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-extrabold uppercase">${memberHierarchyOptions(member.hierarchy || 'congregacion')}</select><span class="inline-block text-[9px] px-2 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-extrabold uppercase">${escapeMemberHtml(memberCategoryLabel(member.membershipCategory))}</span></div></div><div class="flex"><button onclick="event.stopPropagation(); editMember('${escapeMemberHtml(member.id)}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Editar"><i class="fas fa-pen"></i></button><button onclick="event.stopPropagation(); removeMember('${escapeMemberHtml(member.id)}')" class="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Archivar"><i class="fas fa-box-archive"></i></button></div></div>
                         ${member.familyName ? `<p class="text-xs text-slate-500 mt-2"><i class="fas fa-house-user mr-1 text-indigo-500"></i>${escapeMemberHtml(member.familyName)}</p>` : ''}
+                        <div class="flex items-center justify-between gap-2">${phoneLine}${memberContactActions(member)}</div>
                         <div class="flex flex-wrap gap-1 mt-2">${roles.map(role => `<span class="text-[9px] px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-bold">${escapeMemberHtml(role)}</span>`).join('') || '<span class="text-[9px] text-gray-400 italic">Sin función en Personal</span>'}</div>
                         ${relatives ? `<div class="flex flex-wrap gap-1 mt-2 border-t dark:border-gray-700 pt-2">${relatives}</div>` : ''}
                         </div>
@@ -1922,10 +1947,14 @@
                 ['lideres','Líderes','fa-people-group'],
                 ['congregacion','Congregación','fa-church']
             ];
-            container.innerHTML = filtered.length ? hierarchyOrder.map(([key,label,icon]) => {
-                const people = filtered.filter(member => (member.hierarchy || 'congregacion') === key);
-                return `<section class="lg:col-span-2 space-y-3"><div class="flex items-center gap-3 px-1"><div class="w-9 h-9 rounded-xl bg-blue-700 text-white flex items-center justify-center"><i class="fas ${icon}"></i></div><div><h2 class="font-extrabold text-slate-800 dark:text-white uppercase tracking-wider text-sm">${label}</h2><p class="text-[10px] text-slate-500">${people.length} persona${people.length === 1 ? '' : 's'}</p></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-4">${people.length ? people.map(renderMemberCard).join('') : '<div class="lg:col-span-2 rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 p-5 text-center text-xs text-slate-400">Sin personas en esta jerarquía</div>'}</div></section>`;
-            }).join('') : '<div class="lg:col-span-2 py-16 text-center text-gray-400"><i class="fas fa-user-slash text-3xl mb-3"></i><p>No se encontraron miembros.</p></div>';
+            const gridClass = memberCardDensity === 'icon' ? 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3' : 'grid grid-cols-1 lg:grid-cols-2 gap-4';
+            const adultSections = hierarchyOrder.filter(([key]) => !memberHierarchyFilter || key === memberHierarchyFilter).map(([key,label,icon]) => {
+                const people = adults.filter(member => (member.hierarchy || 'congregacion') === key);
+                if (memberHierarchyFilter && !people.length) return '';
+                return `<section class="lg:col-span-2 space-y-3"><div class="flex items-center gap-3 px-1"><div class="w-9 h-9 rounded-xl bg-blue-700 text-white flex items-center justify-center"><i class="fas ${icon}"></i></div><div><h2 class="font-extrabold text-slate-800 dark:text-white uppercase tracking-wider text-sm">${label}</h2><p class="text-[10px] text-slate-500">${people.length} persona${people.length === 1 ? '' : 's'}</p></div></div><div class="${gridClass}">${people.length ? people.map(renderMemberCard).join('') : '<div class="lg:col-span-2 rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 p-5 text-center text-xs text-slate-400">Sin personas en esta jerarquía</div>'}</div></section>`;
+            }).join('');
+            const minorSection = minors.length ? `<section class="lg:col-span-2 space-y-3 mt-8 pt-6 border-t-2 border-dashed border-amber-200 dark:border-amber-900"><div class="flex items-center gap-3 px-1"><div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center"><i class="fas fa-user-shield"></i></div><div><h2 class="font-extrabold text-slate-800 dark:text-white uppercase tracking-wider text-sm">Menores de 14 años</h2><p class="text-[10px] text-slate-500">Sección reservada · ${minors.length} registro${minors.length === 1 ? '' : 's'}</p></div></div><div class="${gridClass}">${minors.map(renderMemberCard).join('')}</div></section>` : '';
+            container.innerHTML = adultSections || minorSection ? adultSections + minorSection : '<div class="lg:col-span-2 py-16 text-center text-gray-400"><i class="fas fa-user-slash text-3xl mb-3"></i><p>No se encontraron miembros.</p></div>';
             document.getElementById('members-total').textContent = membersRegistry.length;
             document.getElementById('members-active').textContent = membersRegistry.filter(member => member.status === 'activo').length;
             document.getElementById('members-families').textContent = new Set(membersRegistry.map(member => normalizePersonName(member.familyName)).filter(Boolean)).size;
@@ -1936,6 +1965,24 @@
             renderRelationshipDraft();
             renderFamiliesRegistry();
             setMembersView(membersRegistryView, false);
+            setMemberCardDensity(memberCardDensity, false);
+        };
+
+        window.updateMemberSearchClear = function() {
+            document.getElementById('member-search-clear')?.classList.toggle('hidden', !document.getElementById('member-search')?.value);
+        };
+        window.clearMemberSearch = function() {
+            const input = document.getElementById('member-search'); input.value = ''; updateMemberSearchClear(); renderMembersRegistry(); input.focus();
+        };
+        window.setMemberHierarchyFilter = function(value) {
+            memberHierarchyFilter = memberHierarchyFilter === value ? '' : value;
+            membersRegistryView = 'people'; renderMembersRegistry();
+        };
+        window.setMemberCardDensity = function(value, shouldRender = true) {
+            memberCardDensity = ['card','list','icon'].includes(value) ? value : 'card';
+            localStorage.setItem('member_card_density', memberCardDensity);
+            document.querySelectorAll('.member-density-btn').forEach(button => button.className = `member-density-btn px-3 py-2 rounded-lg text-xs ${button.dataset.density === memberCardDensity ? 'bg-blue-700 text-white shadow' : 'text-slate-500 dark:text-gray-300'}`);
+            if (shouldRender) renderMembersRegistry();
         };
 
         window.setMembersView = function(view, shouldRender = true) {
@@ -1950,6 +1997,10 @@
             peopleButton.className = `px-4 py-2 rounded-lg text-xs font-bold ${membersRegistryView === 'people' ? 'bg-blue-700 text-white shadow' : 'text-slate-600 dark:text-gray-300'}`;
             familiesButton.className = `px-4 py-2 rounded-lg text-xs font-bold ${membersRegistryView === 'families' ? 'bg-blue-700 text-white shadow' : 'text-slate-600 dark:text-gray-300'}`;
             document.getElementById('member-status-filter').classList.toggle('invisible', membersRegistryView === 'families');
+            document.getElementById('member-density-controls')?.classList.toggle('invisible', membersRegistryView === 'families');
+            document.querySelectorAll('.member-hierarchy-filter').forEach(button => {
+                button.className = `member-hierarchy-filter px-3 py-2 rounded-lg text-xs font-bold ${membersRegistryView === 'people' && button.dataset.memberHierarchy === memberHierarchyFilter ? 'bg-indigo-700 text-white shadow' : 'text-slate-600 dark:text-gray-300'}`;
+            });
             if (shouldRender && membersRegistryView === 'families') renderFamiliesRegistry();
         };
 
@@ -2026,7 +2077,7 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     ${detailValue('Nacimiento', member.birthDate, 'fa-cake-candles')}
-                    ${detailValue('Teléfono / WhatsApp', [member.phone, ...(member.alternatePhones || [])].filter(Boolean).join(' · '), 'fa-phone')}
+                    ${member.phone ? `<div class="rounded-2xl border border-emerald-200 dark:border-emerald-900 p-3 bg-emerald-50 dark:bg-emerald-900/20"><p class="text-[9px] uppercase tracking-wider font-extrabold text-emerald-600"><i class="fab fa-whatsapp mr-1"></i>Teléfono / WhatsApp</p><a href="${escapeMemberHtml(memberWhatsAppUrl(member))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm font-extrabold text-emerald-700 dark:text-emerald-300 mt-1 hover:underline">${escapeMemberHtml(member.phone)} <i class="fas fa-arrow-up-right-from-square text-[10px]"></i></a>${(member.alternatePhones || []).length ? `<p class="text-[10px] text-slate-500 mt-1">Alternativos: ${escapeMemberHtml(member.alternatePhones.join(' · '))}</p>` : ''}</div>` : ''}
                     ${detailValue('Domicilio', member.address, 'fa-location-dot')}
                     ${(member.mapLocation || member.address) ? `<div class="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 p-3"><div class="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700 dark:text-emerald-300 mb-2"><i class="fas fa-map-location-dot mr-1"></i>Ubicación</div><a href="${escapeMemberHtml(memberMapUrl(member))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300 hover:underline">Abrir en Google Maps <i class="fas fa-arrow-up-right-from-square"></i></a></div>` : ''}
                     ${detailValue('Documento', [member.documentType, member.documentNumber].filter(Boolean).join(' '), 'fa-id-card')}
@@ -2062,7 +2113,7 @@
         };
 
         window.exportMembersJson = function() {
-            const blob = new Blob([JSON.stringify({version:'6.6', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
+            const blob = new Blob([JSON.stringify({version:'6.7', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `Registro_Miembros_${new Date().toISOString().slice(0,10)}.json`; link.click();
             URL.revokeObjectURL(url);
