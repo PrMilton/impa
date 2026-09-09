@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor IMPA 7.5: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
+    <title>Gestor IMPA 8.1: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/loguito.png?alt=media&amp;token=14b61179-dfb8-4fb6-9501-023664b089cb">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -207,6 +207,7 @@
                 <button onclick="switchTab('rituales')" id="tab-rituales" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md font-bold text-sm transition-all duration-300 text-blue-100 hover:bg-blue-700 dark:text-gray-300 dark:hover:bg-gray-600">
                     <i class="fas fa-book-bible mr-1"></i> Libro Pastoral
                 </button>
+
             </nav>
 
             <!-- Global Actions (Visible en md+) -->
@@ -253,6 +254,7 @@
                     </div>
                 </div>
                 
+                <section class="p-4 border-t dark:border-gray-700"><h3 class="font-bold text-blue-800 dark:text-blue-200 mb-3">Próximos eventos</h3><div id="upcoming-events" class="space-y-2 text-sm" aria-live="polite"></div></section>
                 <div class="mt-auto p-4 bg-blue-50 dark:bg-gray-700/50 border-t border-blue-100 dark:border-gray-700 flex flex-col gap-3">
                     <p class="text-sm text-blue-800 dark:text-blue-200 leading-tight">
                         <i class="fas fa-info-circle mr-1"></i> Los selectores muestran semáforos (<strong>🔴 🟡 🟢</strong>) para indicar el nivel de carga reciente de cada persona.
@@ -364,17 +366,25 @@
                             <div class="text-center text-sm font-semibold text-purple-600 dark:text-purple-400 mb-1">Oración y Adoración</div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
-                                    Ministro <span class="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded">Mismo de Abre/Cierra</span>
+                                    Ministro <span class="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded">Diácono de Abre/Cierra</span>
                                 </label>
                                 <select id="sel-vie-min" disabled class="w-full bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-gray-600 rounded p-1.5 text-sm font-bold dark:text-white disabled:opacity-100 disabled:cursor-not-allowed"></select>
                             </div>
                             <div class="pt-2 border-t dark:border-gray-700">
                                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Servidores</label>
                                 <div class="grid grid-cols-2 gap-1.5">
+                                    <div class="min-w-0 rounded-lg border border-purple-100 dark:border-gray-600 p-2 bg-purple-50/40 dark:bg-gray-800"><label for="sel-vie-serv1" class="block text-[10px] text-purple-700 dark:text-purple-300 mb-1">Servidor 1<strong class="block text-xs">A cargo de la Alabanza</strong></label>
                                     <select id="sel-vie-serv1" class="w-full bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded p-1.5 text-[11px] dark:text-white" onchange="saveAssignment('vie', 'serv1', this.value)"></select>
+                                    </div>
+                                    <div class="min-w-0 rounded-lg border border-purple-100 dark:border-gray-600 p-2 bg-purple-50/40 dark:bg-gray-800"><label for="sel-vie-serv2" class="block text-[10px] text-purple-700 dark:text-purple-300 mb-1">Servidor 2<strong class="block text-xs">Primera Oración</strong></label>
                                     <select id="sel-vie-serv2" class="w-full bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded p-1.5 text-[11px] dark:text-white" onchange="saveAssignment('vie', 'serv2', this.value)"></select>
+                                    </div>
+                                    <div class="min-w-0 rounded-lg border border-purple-100 dark:border-gray-600 p-2 bg-purple-50/40 dark:bg-gray-800"><label for="sel-vie-serv3" class="block text-[10px] text-purple-700 dark:text-purple-300 mb-1">Servidor 3<strong class="block text-xs">Segunda Oración</strong></label>
                                     <select id="sel-vie-serv3" class="w-full bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded p-1.5 text-[11px] dark:text-white" onchange="saveAssignment('vie', 'serv3', this.value)"></select>
+                                    </div>
+                                    <div class="min-w-0 rounded-lg border border-purple-100 dark:border-gray-600 p-2 bg-purple-50/40 dark:bg-gray-800"><label for="sel-vie-serv4" class="block text-[10px] text-purple-700 dark:text-purple-300 mb-1">Servidor 4<strong class="block text-xs">Tercera Oración</strong></label>
                                     <select id="sel-vie-serv4" class="w-full bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded p-1.5 text-[11px] dark:text-white" onchange="saveAssignment('vie', 'serv4', this.value)"></select>
+                                    </div>
                                 </div>
                             </div>
                             <div id="friday-contact-actions" class="no-print pt-3 border-t dark:border-gray-700 space-y-2">
@@ -630,8 +640,12 @@
                         <option value="boda">💍 Casamiento / Boda</option>
                         <option value="bautismo">💧 Bautismos</option>
                         <option value="superintendencia">👔 Visita Autoridades</option>
+                        <option value="otro">📌 Otro…</option>
                     </select>
                 </div>
+                <div><label for="day-event-name" class="block font-bold mb-1">Nombre del evento (obligatorio para Otro)</label><input id="day-event-name" maxlength="120" class="member-input" placeholder="Ej.: Aniversario de la iglesia"></div>
+                <div class="grid grid-cols-2 gap-3"><div><label for="day-event-date" class="block font-bold mb-1">Fecha</label><select id="day-event-date" class="member-input"></select></div><div><label for="day-event-time" class="block font-bold mb-1">Horario (opcional)</label><input id="day-event-time" type="time" class="member-input"></div></div>
+                <div><label for="day-event-place" class="block font-bold mb-1">Lugar (opcional)</label><input id="day-event-place" maxlength="180" class="member-input"></div>
                 <div class="border-t dark:border-gray-700 pt-5">
                     <label class="block font-bold text-blue-700 dark:text-blue-400 mb-1">📢 Mensaje Público (WhatsApp/Tarjeta)</label>
                     <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-2 leading-tight">Reemplaza las asignaciones. Se envía por WhatsApp.</p>
@@ -1004,6 +1018,8 @@
             const vistaMie = document.getElementById('vista-miembros');
             const vistaPet = document.getElementById('vista-peticiones');
             const vistaRit = document.getElementById('vista-rituales');
+
+
             const btnCar = document.getElementById('tab-cartelera');
             const btnPer = document.getElementById('tab-personal');
             const btnMie = document.getElementById('tab-miembros');
@@ -1027,6 +1043,7 @@
             btnMie.className = inactiveClass;
             btnPet.className = inactiveClass;
             btnRit.className = inactiveClass;
+
 
             if (tab === 'cartelera') {
                 renderWeek(); // Refrescar combos
@@ -2258,7 +2275,7 @@
         };
 
         window.exportMembersJson = function() {
-            const blob = new Blob([JSON.stringify({version:'7.4', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
+            const blob = new Blob([JSON.stringify({version:'8.1', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `Registro_Miembros_${new Date().toISOString().slice(0,10)}.json`; link.click();
             URL.revokeObjectURL(url);
@@ -2437,11 +2454,34 @@
                 cell.className = 'calendar-day p-2 rounded-lg text-sm transition dark:text-gray-300';
                 cell.textContent = i;
                 const cellDate = new Date(year, month, i);
+                const dayEvents=scheduledEvents().filter(event=>event.date===formatDateKey(cellDate));
+                if(dayEvents.length){cell.classList.add('ring-1','ring-blue-400');cell.title=dayEvents.map(event=>event.name).join(' · ');}
                 if (cellDate.toDateString() === today.toDateString()) cell.classList.add('today');
                 if (cellDate.toDateString() === selectedDate.toDateString()) cell.classList.add('selected');
                 cell.onclick = () => { selectedDate = new Date(year, month, i); renderCalendar(); renderWeek(); };
                 grid.appendChild(cell);
             }
+            renderUpcomingEvents();
+        }
+
+        function scheduledEvents() {
+            return Object.keys(assignments).filter(key=>/^\d{4}-\d{2}-\d{2}_event_type$/.test(key)&&assignments[key]).flatMap(key=>{
+                const base=key.slice(0,10), type=assignments[key];
+                const dates=assignments[base+'_event_dates']||[base];
+                return dates.map(date=>({base,date,name:assignments[base+'_event_name']||eventStyles[type]?.name||'Evento',time:assignments[base+'_event_time']||'',place:assignments[base+'_event_place']||''}));
+            }).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+        }
+        function renderUpcomingEvents() {
+            const container=document.getElementById('upcoming-events');if(!container)return;
+            container.replaceChildren();
+            const events=scheduledEvents().filter(event=>event.date>=formatDateKey(new Date()));
+            if(!events.length){container.textContent='No hay eventos especiales próximos.';return;}
+            events.forEach(event=>{
+                const button=document.createElement('button');button.type='button';button.className='w-full text-left p-3 rounded-lg border border-blue-100 dark:border-gray-600 bg-blue-50 dark:bg-gray-800';
+                button.textContent=new Date(event.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'})+' · '+event.name+(event.time?' · '+event.time:'')+(event.place?' · '+event.place:'');
+                button.onclick=()=>{selectedDate=new Date(event.base+'T12:00:00');currentDate=new Date(selectedDate);renderCalendar();renderWeek();const code=Object.keys(currentWeekDateKeys).find(code=>currentWeekDateKeys[code]===event.base);if(code)openDayConfig(code);};
+                container.append(button);
+            });
         }
 
         function changeMonth(dir) { currentDate.setMonth(currentDate.getMonth() + dir); renderCalendar(); }
@@ -2458,6 +2498,7 @@
         }
 
         const eventStyles = {
+            'otro': {border:'border-t-blue-500',badgeBg:'bg-blue-100 dark:bg-blue-900/50',badgeText:'text-blue-700 dark:text-blue-300',icon:'fa-calendar-star',name:'Evento especial'},
             'santa_cena': { border: 'border-t-purple-500', badgeBg: 'bg-purple-100 dark:bg-purple-900/50', badgeText: 'text-purple-700 dark:text-purple-300', icon: 'fa-wine-glass', name: 'Santa Cena' },
             'primicias': { border: 'border-t-yellow-500', badgeBg: 'bg-yellow-100 dark:bg-yellow-900/50', badgeText: 'text-yellow-700 dark:text-yellow-300', icon: 'fa-seedling', name: 'Primicias' },
             'boda': { border: 'border-t-pink-500', badgeBg: 'bg-pink-100 dark:bg-pink-900/50', badgeText: 'text-pink-700 dark:text-pink-300', icon: 'fa-heart', name: 'Casamiento' },
@@ -2482,7 +2523,8 @@
             if (evType && eventStyles[evType]) {
                 const ev = eventStyles[evType];
                 cardEl.classList.add(ev.border.split(' ')[0]);
-                badgeEl.innerHTML = `<i class="fas ${ev.icon} mr-1"></i> ${ev.name}`;
+                const detail=[assignments[dateKey+'_event_name']||ev.name,...(assignments[dateKey+'_event_dates']||[]).map(date=>new Date(date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'})),assignments[dateKey+'_event_time'],assignments[dateKey+'_event_place']].filter(Boolean).join(' · ');
+                badgeEl.textContent = detail;
                 badgeEl.className = `p-2 text-center font-bold text-xs uppercase tracking-wide border-b dark:border-gray-700 ${ev.badgeBg} ${ev.badgeText}`;
                 badgeEl.classList.remove('hidden');
             } else {
@@ -2554,11 +2596,11 @@
             const container = document.getElementById('friday-contact-list');
             if (!container) return;
             container.innerHTML = [
-                fridayContactRow('min', 'Ministro'),
-                fridayContactRow('serv1', 'Servidor 1', false),
-                fridayContactRow('serv2', 'Servidor 2'),
-                fridayContactRow('serv3', 'Servidor 3'),
-                fridayContactRow('serv4', 'Servidor 4')
+                fridayContactRow('min', 'Ministro · Abre/Cierra'),
+                fridayContactRow('serv1', 'Servidor 1 · Alabanza', false),
+                fridayContactRow('serv2', 'Servidor 2 · Primera Oración'),
+                fridayContactRow('serv3', 'Servidor 3 · Segunda Oración'),
+                fridayContactRow('serv4', 'Servidor 4 · Tercera Oración')
             ].join('');
         }
 
@@ -2589,11 +2631,12 @@
             let message = `🙏 *CULTO DE ORACIÓN · ${formatForWhatsApp(fridayDate).toUpperCase()}*\n\nHola ${name}. `;
             if (role === 'min') {
                 const roles = [1,2,3,4].map(index => fridayRoleName(`serv${index}`) || 'Sin asignar');
-                message += `Te corresponde ministrar y coordinar el culto de oración.\n\n${guide.intro}\n\n*EQUIPO*\n🎶 Alabanza: ${roles[0]}\n🙏 Congregación: ${roles[1]}\n🙏 Autoridades y expansión: ${roles[2]}\n🙏 Familias: ${roles[3]}\n\nDios te bendiga en este servicio.`;
+                message += `Te corresponde ministrar y coordinar el culto de oración.\n\n${guide.intro}\n\n*EQUIPO*\n🎶 Alabanza: ${roles[0]}\n🙏 Primera Oración · Congregación: ${roles[1]}\n🙏 Segunda Oración · Autoridades y expansión: ${roles[2]}\n🙏 Tercera Oración · Familias: ${roles[3]}\n\nDios te bendiga en este servicio.`;
             } else {
                 const topicIndex = Number(role.replace('serv','')) - 1;
                 const topic = guide[`topic${topicIndex}`] || '';
-                message += `Te corresponde guiar el siguiente momento de oración:\n\n${topic}`;
+                const prayerLabel = {serv2:'Primera Oración',serv3:'Segunda Oración',serv4:'Tercera Oración'}[role] || 'Oración';
+                message += `Te corresponde guiar la *${prayerLabel}*:\n\n${topic}`;
                 if (role === 'serv2') {
                     const petitions = await publicPrayerSummaries();
                     if (petitions.length) message += `\n\n*PETICIONES AUTORIZADAS PARA COMPARTIR*\n${petitions.map(item => `• ${item}`).join('\n')}`;
@@ -2715,6 +2758,14 @@
             document.getElementById('day-event-select').value = assignments[`${dKey}_event_type`] || "";
             document.getElementById('day-custom-textarea').value = assignments[`${dKey}_event_text`] || "";
             document.getElementById('day-internal-textarea').value = assignments[`${dKey}_event_internal`] || "";
+            document.getElementById('day-event-name').value=assignments[dKey+'_event_name']||'';
+            document.getElementById('day-event-time').value=assignments[dKey+'_event_time']||'';
+            document.getElementById('day-event-place').value=assignments[dKey+'_event_place']||'';
+            const dateSelect=document.getElementById('day-event-date');dateSelect.replaceChildren();
+            const dates=code==='mar_mie'?[dKey,formatDateKey(addDays(new Date(dKey+'T12:00:00'),1))]:[dKey];
+            dates.forEach(date=>dateSelect.add(new Option(new Date(date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'short'}),date)));
+            if(code==='mar_mie')dateSelect.add(new Option('Martes y miércoles','both'));
+            const savedDates=assignments[dKey+'_event_dates'];dateSelect.value=savedDates?.length===2?'both':savedDates?.[0]||dKey;
             document.getElementById('day-config-modal').classList.remove('hidden');
         };
         window.closeDayConfig = () => document.getElementById('day-config-modal').classList.add('hidden');
@@ -2723,12 +2774,17 @@
             const ev = document.getElementById('day-event-select').value;
             const cTxt = document.getElementById('day-custom-textarea').value.trim();
             const iTxt = document.getElementById('day-internal-textarea').value.trim();
+            const eventName=document.getElementById('day-event-name').value.trim();
+            if(ev==='otro'&&!eventName){showToast('Especificá el nombre del evento.','error');document.getElementById('day-event-name').focus();return;}
+            const eventDate=document.getElementById('day-event-date').value;
+            const metadata={name:eventName,time:document.getElementById('day-event-time').value,place:document.getElementById('day-event-place').value.trim(),dates:eventDate==='both'?[dKey,formatDateKey(addDays(new Date(dKey+'T12:00:00'),1))]:[eventDate]};
+            Object.entries(metadata).forEach(([key,value])=>{if(ev&&value)assignments[dKey+'_event_'+key]=value;else delete assignments[dKey+'_event_'+key];});
             
             if(ev) assignments[`${dKey}_event_type`] = ev; else delete assignments[`${dKey}_event_type`];
             if(cTxt) assignments[`${dKey}_event_text`] = cTxt; else delete assignments[`${dKey}_event_text`];
             if(iTxt) assignments[`${dKey}_event_internal`] = iTxt; else delete assignments[`${dKey}_event_internal`];
             
-            saveToCloud(); closeDayConfig(); renderWeek(); showToast("Día configurado", "success");
+            saveToCloud(); closeDayConfig(); renderWeek(); renderCalendar(); showToast("Día configurado", "success");
         };
 
         window.toggleAbsences = function() {
@@ -2848,7 +2904,10 @@
                 const evType = assignments[`${dKey}_event_type`];
                 const custom = assignments[`${dKey}_event_text`];
                 let out = `🗓️ *${title.toUpperCase()} ${dateObj ? formatForWhatsApp(dateObj) : ''}*\n`;
-                if(evType && eventStyles[evType]) out += `  ✨ *${eventStyles[evType].name.toUpperCase()}* ✨\n`;
+                if(evType && eventStyles[evType]) {
+                    const eventInfo=[assignments[dKey+'_event_name']||eventStyles[evType].name,...(assignments[dKey+'_event_dates']||[]).map(date=>new Date(date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'short'})),assignments[dKey+'_event_time'],assignments[dKey+'_event_place']].filter(Boolean).join(' · ');
+                    out += `  ✨ *${eventInfo}*\n`;
+                }
                 if(custom) out += `  ${custom.replace(/\n/g, '\n  ')}\n`;
                 else out += defContent + '\n';
                 return (code === 'mar_mie' && !custom && !evType) ? '' : out + '\n';
@@ -2863,8 +2922,9 @@
             text += buildDayWa('jue', 'Jueves', days[2], 3, `  🎙️ Coord: ${formatName(rawJueCoord) || '-'}\n  📖 Pred: ${formatName(rawJuePred) || '-'}`);
             
             const rawVieMin = rawDiac;
-            const vieS = [1,2,3,4].map(i => getRawRole(4, `serv${i}`)).filter(Boolean).map(formatName).join(', ');
-            text += buildDayWa('vie', 'Viernes', days[3], 4, `  🙏 Ministra: ${formatName(rawVieMin) || '-'}${vieS ? `\n  🤝 Servidores: ${vieS}` : ''}`);
+            const fridayLabels = ['🎶 Alabanza', '🙏 Primera Oración', '🙏 Segunda Oración', '🙏 Tercera Oración'];
+            const vieS = fridayLabels.map((label,i) => `  ${label}: ${formatName(getRawRole(4, `serv${i+1}`)) || 'Sin asignar'}`).join('\n');
+            text += buildDayWa('vie', 'Viernes', days[3], 4, `  🙏 Ministro (diácono de Abre/Cierra): ${formatName(rawVieMin) || '-'}\n${vieS}`);
             
             const isMiltonSab = ((getWeeksDiff(monday, epochMilton) % 2) + 2) % 2 === 0;
             const rawSabCoord = getRawRole(5, 'coord');
@@ -4784,8 +4844,6 @@ ritualRoot.render(<LibroPastoralApp />);
             refresh();
         })();
     </script>
+
 </body>
 </html>
-
-
-
