@@ -55,6 +55,19 @@
         .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
         .dark ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
 
+        /* Cartelera: viernes ocupa el lateral de las dos filas. */
+        @media screen and (min-width: 1100px) {
+            #cards-container { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: 'martes jueves viernes' 'sabado domingo viernes'; align-items: start; }
+            #card-mar_mie { grid-area: martes; }
+            #card-jue { grid-area: jueves; }
+            #card-vie { grid-area: viernes; }
+            #card-sab { grid-area: sabado; }
+            #card-dom { grid-area: domingo; }
+        }
+        #cards-container > div { min-width: 0; }
+        .agenda-event { border-left-width: 5px; transition: background-color .15s, box-shadow .15s; }
+        .agenda-event:hover { box-shadow: 0 2px 8px #142a3a18; }
+        .agenda-event:focus-visible { outline: 2px solid #348eb9; outline-offset: 2px; }
         /* Estilos de Calendario */
         .calendar-day:hover:not(.empty) { cursor: pointer; }
         .calendar-day.today { background-color: #dbeafe; color: #1e40af; font-weight: bold; border: 1px solid #bfdbfe; }
@@ -306,7 +319,7 @@
                 </div>
 
                 <!-- Cards Grid -->
-                <div class="grid grid-cols-1 xl:grid-cols-5 gap-4 pb-20" id="cards-container">
+                <div class="grid grid-cols-1 gap-4 pb-20" id="cards-container">
                     
                     <!-- Tarjeta 1: Mar/Mié -->
                     <div id="card-mar_mie" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-t-4 border-t-gray-400 dark:border-gray-500 overflow-hidden flex flex-col transition-all duration-300">
@@ -2477,9 +2490,13 @@
             const events=scheduledEvents().filter(event=>event.date>=formatDateKey(new Date()));
             if(!events.length){container.textContent='No hay eventos especiales próximos.';return;}
             events.forEach(event=>{
-                const button=document.createElement('button');button.type='button';button.className='w-full text-left p-3 rounded-lg border border-blue-100 dark:border-gray-600 bg-blue-50 dark:bg-gray-800';
+                const button=document.createElement('button');button.type='button';button.className='agenda-event w-full text-left p-3 rounded-lg border border-blue-100 dark:border-gray-600 bg-white dark:bg-gray-800';
+                const colors=['#2563eb','#9333ea','#0d9488','#d97706','#db2777','#4f46e5'];
+                const colorIndex=[...event.base+event.name].reduce((sum,char)=>sum+char.charCodeAt(0),0)%colors.length;
+                button.style.borderLeftColor=colors[colorIndex];
+                button.title='Ver esta fecha en el calendario';
                 button.textContent=new Date(event.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'})+' · '+event.name+(event.time?' · '+event.time:'')+(event.place?' · '+event.place:'');
-                button.onclick=()=>{selectedDate=new Date(event.base+'T12:00:00');currentDate=new Date(selectedDate);renderCalendar();renderWeek();const code=Object.keys(currentWeekDateKeys).find(code=>currentWeekDateKeys[code]===event.base);if(code)openDayConfig(code);};
+                button.onclick=()=>{selectedDate=new Date(event.date+'T12:00:00');currentDate=new Date(selectedDate);renderCalendar();renderWeek();document.getElementById('calendar-grid').scrollIntoView({behavior:'smooth',block:'nearest'});};
                 container.append(button);
             });
         }
