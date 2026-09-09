@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor IMPA 7.0: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
+    <title>Gestor IMPA 7.3: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/loguito.png?alt=media&amp;token=14b61179-dfb8-4fb6-9501-023664b089cb">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -358,9 +358,9 @@
                             <div class="text-center text-sm font-semibold text-purple-600 dark:text-purple-400 mb-1">Oración y Adoración</div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
-                                    Ministro <span class="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded">*Diácono turno</span>
+                                    Ministro <span class="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded">Mismo de Abre/Cierra</span>
                                 </label>
-                                <select id="sel-vie-min" class="w-full bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded p-1.5 text-sm dark:text-white" onchange="saveAssignment('vie', 'min', this.value)"></select>
+                                <select id="sel-vie-min" disabled class="w-full bg-purple-50 dark:bg-gray-700 border border-purple-200 dark:border-gray-600 rounded p-1.5 text-sm font-bold dark:text-white disabled:opacity-100 disabled:cursor-not-allowed"></select>
                             </div>
                             <div class="pt-2 border-t dark:border-gray-700">
                                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Servidores</label>
@@ -1093,7 +1093,7 @@
                                 migrateListsToAppData();
                                 syncPersonalToCartelera(true); 
                             }
-                            ensureRegistryLinks();
+                            if (ensureRegistryLinks()) saveToCloud();
                         }
                         lastUpdateTime = serverTime;
                         
@@ -1219,6 +1219,13 @@
             if(t['diaconos']) {
                 lists['diaconos_varones'] = t['diaconos'].men.map(p=>p.name);
             }
+
+            // El pastor principal funciona como comodín ministerial sin duplicar
+            // su tarjeta dentro de cada equipo de Personal.
+            ['predicadores', 'coordinadores', 'ministros', 'diaconos'].forEach(key => {
+                lists[key] = [...new Set([...(lists[key] || []), 'Pr Milton'])];
+            });
+            lists['diaconos_varones'] = [...new Set([...(lists.diaconos_varones || []), 'Pr Milton'])];
 
             // Rotation
             ['porteros', 'limpieza'].forEach(key => {
@@ -1486,9 +1493,69 @@
             return true;
         }
 
+        function ensureLeadPastorIdentity() {
+            const pastorTeam = appData.teams?.pastores;
+            const pastorRefs = [...(pastorTeam?.men || []), ...(pastorTeam?.women || [])];
+            let pastorRef = pastorRefs.find(person => normalizePersonName(person.name).includes('milton'));
+            const candidates = membersRegistry.filter(item => {
+                const names = [item.name, item.legalName].map(normalizePersonName);
+                return names.includes('pr milton') || names.includes('milton marcelo gonzalez');
+            });
+            if (!candidates.length) return false;
+            const score = item => ['phone','address','mapLocation','birthDate','documentNumber','familyName','notes','updatedAt'].filter(field => item[field]).length + ((item.relationships || []).length * 2);
+            let member = candidates.find(item => item.id === pastorRef?.personId) || candidates.find(item => item.serviceWildcard) || [...candidates].sort((a,b) => score(b) - score(a))[0];
+            if (!pastorRef) pastorRef = pastorRefs.find(person => person.personId === member.id);
+            let changed = false;
+            const redirects = new Map();
+            const formerNames = new Set();
+            candidates.forEach(item => { if (normalizePersonName(item.name) !== 'pr milton') formerNames.add(normalizePersonName(item.name)); });
+            candidates.filter(item => item.id !== member.id).forEach(duplicate => {
+                formerNames.add(normalizePersonName(duplicate.name));
+                redirects.set(duplicate.id, member.id);
+                if (!member.legalName && normalizePersonName(duplicate.name) === 'milton marcelo gonzalez') member.legalName = duplicate.name;
+                ['phone','address','mapLocation','birthDate','documentType','documentNumber','joinDate','baptismDate','baptismPlace','probationDate','communionDate','familyName','exitDate','exitCause'].forEach(field => {
+                    if (!member[field] && duplicate[field]) member[field] = duplicate[field];
+                });
+                if (duplicate.notes && !String(member.notes || '').includes(duplicate.notes)) member.notes = [member.notes, duplicate.notes].filter(Boolean).join('\n\n');
+                const extraPhones = [duplicate.phone, ...(duplicate.alternatePhones || [])].filter(Boolean);
+                extraPhones.forEach(phone => addImportedPhone(member, phone));
+                member.relationships = [...(member.relationships || []), ...(duplicate.relationships || [])];
+                changed = true;
+            });
+            if (redirects.size) {
+                membersRegistry = membersRegistry.filter(item => !redirects.has(item.id));
+                membersRegistry.forEach(item => {
+                    const seen = new Set();
+                    item.relationships = (item.relationships || []).map(relation => ({...relation, personId:redirects.get(relation.personId) || relation.personId})).filter(relation => relation.personId !== item.id && !seen.has(relation.personId) && seen.add(relation.personId));
+                });
+                personnelReferences().forEach(({person}) => {
+                    if (redirects.has(person.personId)) person.personId = member.id;
+                    if (formerNames.has(normalizePersonName(person.name))) person.name = 'Pr Milton';
+                });
+            }
+            Object.keys(assignments).forEach(key => {
+                const value = assignments[key];
+                if (typeof value === 'string' && formerNames.has(normalizePersonName(value))) assignments[key] = 'Pr Milton';
+                else if (Array.isArray(value)) assignments[key] = value.map(item => typeof item === 'string' && formerNames.has(normalizePersonName(item)) ? 'Pr Milton' : item);
+            });
+            if (member.name !== 'Pr Milton') {
+                if (!member.legalName) member.legalName = member.name;
+                member.name = 'Pr Milton'; changed = true;
+            }
+            if (member.hierarchy !== 'pastores') { member.hierarchy = 'pastores'; changed = true; }
+            if (member.membershipCategory !== 'pastor') { member.membershipCategory = 'pastor'; changed = true; }
+            if (member.serviceWildcard !== true) { member.serviceWildcard = true; changed = true; }
+            if (pastorRef) {
+                if (pastorRef.name !== 'Pr Milton') { pastorRef.name = 'Pr Milton'; changed = true; }
+                if (pastorRef.personId !== member.id) { pastorRef.personId = member.id; changed = true; }
+            }
+            return changed;
+        }
+
         function ensureRegistryLinks() {
             let changed = false;
             unlinkOperationalRotations();
+            if (ensureLeadPastorIdentity()) changed = true;
             if (mergeSafeMemberDuplicates()) changed = true;
             const registryById = new Map(membersRegistry.map(member => [member.id, member]));
             const registryByName = new Map();
@@ -1845,6 +1912,11 @@
                 createdAt: previous.createdAt || Date.now(), updatedAt: Date.now()
             };
             if (!member.name) return;
+            const isLeadPastor = previous.serviceWildcard === true || [...(appData.teams?.pastores?.men || []), ...(appData.teams?.pastores?.women || [])].some(person => person.personId === id && normalizePersonName(person.name).includes('milton'));
+            if (isLeadPastor) {
+                if (member.name !== 'Pr Milton' && !member.legalName) member.legalName = member.name;
+                member.name = 'Pr Milton'; member.hierarchy = 'pastores'; member.membershipCategory = 'pastor'; member.serviceWildcard = true;
+            }
             if (existingIndex < 0) {
                 const duplicate = membersRegistry.find(item => normalizePersonName(item.name) === normalizePersonName(member.name));
                 if (duplicate) {
@@ -2166,7 +2238,7 @@
         };
 
         window.exportMembersJson = function() {
-            const blob = new Blob([JSON.stringify({version:'7.0', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
+            const blob = new Blob([JSON.stringify({version:'7.3', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `Registro_Miembros_${new Date().toISOString().slice(0,10)}.json`; link.click();
             URL.revokeObjectURL(url);
@@ -2280,7 +2352,7 @@
                 
                 const jueCoord = assignments[`${formatDateKey(addDays(mon,3))}_coord`] || "";
                 const juePred = assignments[`${formatDateKey(addDays(mon,3))}_pred`] || "";
-                const vieMin = assignments[`${formatDateKey(addDays(mon,4))}_min`] || diac;
+                const vieMin = diac;
                 const vieS1 = assignments[`${formatDateKey(addDays(mon,4))}_serv1`] || "";
                 const vieS2 = assignments[`${formatDateKey(addDays(mon,4))}_serv2`] || "";
                 const vieS3 = assignments[`${formatDateKey(addDays(mon,4))}_serv3`] || "";
@@ -2445,7 +2517,7 @@
             if (role === 'min') {
                 const monday = getMonday(selectedDate);
                 const weekKey = formatDateKey(monday);
-                return assignments[`${dateKey}_min`] !== undefined ? assignments[`${dateKey}_min`] : (assignments[`${weekKey}_diacono`] || getWeeklyCyclicValue('diacono', monday, lists.diaconos_varones || lists.diaconos));
+                return assignments[`${weekKey}_diacono`] !== undefined ? assignments[`${weekKey}_diacono`] : getWeeklyCyclicValue('diacono', monday, lists.diaconos_varones || lists.diaconos);
             }
             return assignments[`${dateKey}_${role}`] || '';
         }
@@ -2561,7 +2633,7 @@
             document.getElementById('date-dom').textContent = formatDisplay(days[5]);
 
             // Unificamos Pastorado + Predicadores para los selectores de predicación
-            const predicadoresCompletos = filterAbs([...(lists.pastores || []), ...(lists.predicadores || [])]);
+            const predicadoresCompletos = filterAbs([...new Set([...(lists.pastores || []), ...(lists.predicadores || [])])]);
 
             // Milton rules
             const miltonDiff = getWeeksDiff(monday, epochMilton);
@@ -2587,8 +2659,9 @@
             loadRole('jue', 'pred', predicadoresCompletos);
             
             const minAll = filterAbs(lists.ministros);
-            const vieMinList = [...new Set([...minAll, cDiac])].filter(Boolean);
-            loadRole('vie', 'min', vieMinList, cDiac);
+            populateSelect('sel-vie-min', filterAbs(lists.diaconos_varones || lists.diaconos), cDiac, false, warnings);
+            document.getElementById('sel-vie-min').dataset.date = currentWeekDateKeys.vie;
+            document.getElementById('sel-vie-min').disabled = true;
             loadRole('vie', 'serv1', minAll); loadRole('vie', 'serv2', minAll); loadRole('vie', 'serv3', minAll); loadRole('vie', 'serv4', minAll);
 
             let defSabPred = (isMiltonSab && !absences.includes("Pr Milton")) ? "Pr Milton" : "";
@@ -2769,7 +2842,7 @@
             const rawJuePred = getRawRole(3, 'pred');
             text += buildDayWa('jue', 'Jueves', days[2], 3, `  🎙️ Coord: ${formatName(rawJueCoord) || '-'}\n  📖 Pred: ${formatName(rawJuePred) || '-'}`);
             
-            const rawVieMin = filterAbs(assignments[`${formatDateKey(addDays(monday, 4))}_min`] !== undefined ? assignments[`${formatDateKey(addDays(monday, 4))}_min`] : rawDiac);
+            const rawVieMin = rawDiac;
             const vieS = [1,2,3,4].map(i => getRawRole(4, `serv${i}`)).filter(Boolean).map(formatName).join(', ');
             text += buildDayWa('vie', 'Viernes', days[3], 4, `  🙏 Ministra: ${formatName(rawVieMin) || '-'}${vieS ? `\n  🤝 Servidores: ${vieS}` : ''}`);
             
