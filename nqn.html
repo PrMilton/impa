@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor IMPA 7.3: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
+    <title>Gestor IMPA 7.5: Cartelera, Personal, Miembros, Peticiones y Libro Pastoral</title>
     <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/loguito.png?alt=media&amp;token=14b61179-dfb8-4fb6-9501-023664b089cb">
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
@@ -42,6 +42,12 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
         
         /* Scrollbar general */
+        #page-back-top { position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 35; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid #cbd5e1; border-radius: 50%; background: rgba(255,255,255,.88); color: #245b7e; box-shadow: 0 2px 8px #142a3a18; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s, background .18s; cursor: pointer; }
+        #page-back-top.is-visible { opacity: .75; visibility: visible; pointer-events: auto; }
+        #page-back-top:hover, #page-back-top:focus-visible { opacity: 1; background: #e3f0f7; }
+        #page-back-top:focus-visible { outline: 2px solid #348eb9; outline-offset: 3px; }
+        .dark #page-back-top { background: #1f2937; color: #c0e0ef; border-color: #475569; }
+        @media (prefers-reduced-motion: reduce) { #page-back-top { transition: none; } }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -1093,7 +1099,11 @@
                                 migrateListsToAppData();
                                 syncPersonalToCartelera(true); 
                             }
-                            if (ensureRegistryLinks()) saveToCloud();
+                            const registryChanged = ensureRegistryLinks();
+                            // La identidad visible en Cartelera se deriva después de
+                            // resolver el nombre personal y su alias ministerial.
+                            syncPersonalToCartelera(false);
+                            if (registryChanged) saveToCloud();
                         }
                         lastUpdateTime = serverTime;
                         
@@ -1127,8 +1137,8 @@
                     } else {
                         appData = JSON.parse(JSON.stringify(defaultAppData));
                     }
-                    syncPersonalToCartelera(false);
                     ensureRegistryLinks();
+                    syncPersonalToCartelera(false);
                     renderCalendar();
                     renderWeek();
                 }
@@ -1207,17 +1217,21 @@
         function syncPersonalToCartelera(triggerSave = false) {
             syncMemberNamesToPersonnel();
             const t = appData.teams;
+            const carteleraName = person => {
+                const member = membersRegistry.find(item => item.id === person.personId);
+                return member?.serviceAlias || person.name;
+            };
             
             // Standard
             ['pastores', 'predicadores', 'coordinadores', 'ministros', 'diaconos'].forEach(key => {
                 if(t[key]) {
-                    lists[key] = [...t[key].men.map(p=>p.name), ...t[key].women.map(p=>p.name)];
+                    lists[key] = [...t[key].men.map(carteleraName), ...t[key].women.map(carteleraName)];
                 }
             });
 
             // Especial para Diáconos: excluir mujeres para rotaciones de Abre/Cierra
             if(t['diaconos']) {
-                lists['diaconos_varones'] = t['diaconos'].men.map(p=>p.name);
+                lists['diaconos_varones'] = t['diaconos'].men.map(carteleraName);
             }
 
             // El pastor principal funciona como comodín ministerial sin duplicar
@@ -1494,12 +1508,14 @@
         }
 
         function ensureLeadPastorIdentity() {
+            const canonicalName = 'Milton M. González';
+            const serviceAlias = 'Pr Milton';
             const pastorTeam = appData.teams?.pastores;
             const pastorRefs = [...(pastorTeam?.men || []), ...(pastorTeam?.women || [])];
             let pastorRef = pastorRefs.find(person => normalizePersonName(person.name).includes('milton'));
             const candidates = membersRegistry.filter(item => {
-                const names = [item.name, item.legalName].map(normalizePersonName);
-                return names.includes('pr milton') || names.includes('milton marcelo gonzalez');
+                const names = [item.name, item.legalName, item.serviceAlias].map(normalizePersonName);
+                return names.includes('pr milton') || names.includes('milton marcelo gonzalez') || names.includes('milton m gonzalez');
             });
             if (!candidates.length) return false;
             const score = item => ['phone','address','mapLocation','birthDate','documentNumber','familyName','notes','updatedAt'].filter(field => item[field]).length + ((item.relationships || []).length * 2);
@@ -1508,7 +1524,10 @@
             let changed = false;
             const redirects = new Map();
             const formerNames = new Set();
-            candidates.forEach(item => { if (normalizePersonName(item.name) !== 'pr milton') formerNames.add(normalizePersonName(item.name)); });
+            candidates.forEach(item => {
+                const formerName = normalizePersonName(item.name);
+                if (formerName && formerName !== normalizePersonName(serviceAlias)) formerNames.add(formerName);
+            });
             candidates.filter(item => item.id !== member.id).forEach(duplicate => {
                 formerNames.add(normalizePersonName(duplicate.name));
                 redirects.set(duplicate.id, member.id);
@@ -1530,23 +1549,24 @@
                 });
                 personnelReferences().forEach(({person}) => {
                     if (redirects.has(person.personId)) person.personId = member.id;
-                    if (formerNames.has(normalizePersonName(person.name))) person.name = 'Pr Milton';
+                    if (formerNames.has(normalizePersonName(person.name))) person.name = canonicalName;
                 });
             }
             Object.keys(assignments).forEach(key => {
                 const value = assignments[key];
-                if (typeof value === 'string' && formerNames.has(normalizePersonName(value))) assignments[key] = 'Pr Milton';
-                else if (Array.isArray(value)) assignments[key] = value.map(item => typeof item === 'string' && formerNames.has(normalizePersonName(item)) ? 'Pr Milton' : item);
+                if (typeof value === 'string' && formerNames.has(normalizePersonName(value))) assignments[key] = serviceAlias;
+                else if (Array.isArray(value)) assignments[key] = value.map(item => typeof item === 'string' && formerNames.has(normalizePersonName(item)) ? serviceAlias : item);
             });
-            if (member.name !== 'Pr Milton') {
+            if (member.name !== canonicalName) {
                 if (!member.legalName) member.legalName = member.name;
-                member.name = 'Pr Milton'; changed = true;
+                member.name = canonicalName; changed = true;
             }
+            if (member.serviceAlias !== serviceAlias) { member.serviceAlias = serviceAlias; changed = true; }
             if (member.hierarchy !== 'pastores') { member.hierarchy = 'pastores'; changed = true; }
             if (member.membershipCategory !== 'pastor') { member.membershipCategory = 'pastor'; changed = true; }
             if (member.serviceWildcard !== true) { member.serviceWildcard = true; changed = true; }
             if (pastorRef) {
-                if (pastorRef.name !== 'Pr Milton') { pastorRef.name = 'Pr Milton'; changed = true; }
+                if (pastorRef.name !== canonicalName) { pastorRef.name = canonicalName; changed = true; }
                 if (pastorRef.personId !== member.id) { pastorRef.personId = member.id; changed = true; }
             }
             return changed;
@@ -1914,8 +1934,8 @@
             if (!member.name) return;
             const isLeadPastor = previous.serviceWildcard === true || [...(appData.teams?.pastores?.men || []), ...(appData.teams?.pastores?.women || [])].some(person => person.personId === id && normalizePersonName(person.name).includes('milton'));
             if (isLeadPastor) {
-                if (member.name !== 'Pr Milton' && !member.legalName) member.legalName = member.name;
-                member.name = 'Pr Milton'; member.hierarchy = 'pastores'; member.membershipCategory = 'pastor'; member.serviceWildcard = true;
+                if (member.name !== 'Milton M. González' && !member.legalName) member.legalName = member.name;
+                member.name = 'Milton M. González'; member.serviceAlias = 'Pr Milton'; member.hierarchy = 'pastores'; member.membershipCategory = 'pastor'; member.serviceWildcard = true;
             }
             if (existingIndex < 0) {
                 const duplicate = membersRegistry.find(item => normalizePersonName(item.name) === normalizePersonName(member.name));
@@ -2238,7 +2258,7 @@
         };
 
         window.exportMembersJson = function() {
-            const blob = new Blob([JSON.stringify({version:'7.3', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
+            const blob = new Blob([JSON.stringify({version:'7.4', exportedAt:new Date().toISOString(), members:membersRegistry}, null, 2)], {type:'application/json'});
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a'); link.href = url; link.download = `Registro_Miembros_${new Date().toISOString().slice(0,10)}.json`; link.click();
             URL.revokeObjectURL(url);
@@ -2498,7 +2518,7 @@
                 const linkedMember = membersRegistry.find(member => member.id === personnelRef.person.personId);
                 if (linkedMember) return linkedMember;
             }
-            return membersRegistry.find(member => normalizePersonName(member.name) === key) || null;
+            return membersRegistry.find(member => normalizePersonName(member.name) === key || normalizePersonName(member.serviceAlias) === key) || null;
         }
 
         function whatsappNumber(phone) {
@@ -4719,16 +4739,6 @@ const LibroPastoralApp = () => {
           </div>}
         </main>
 
-        <button 
-          onClick={() => {
-            const el = document.getElementById('ritual-main-content');
-            if(el) el.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className="fixed bottom-6 right-6 bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-gray-700 transition-all z-30 no-print"
-          aria-label="Volver arriba"
-        >
-          <ArrowUp size={20} />
-        </button>
       </div>
     </div>
   );
@@ -4737,6 +4747,42 @@ const ritualRoot = ReactDOM.createRoot(document.getElementById('rituales-root'))
 ritualRoot.render(<LibroPastoralApp />);
 
 
+    </script>
+    <button id="page-back-top" type="button" class="no-print" aria-label="Volver al principio de la página" title="Volver arriba">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 6-6 6 6M12 6v13"/></svg>
+    </button>
+    <script>
+        (() => {
+            const button = document.getElementById('page-back-top');
+            const views = [...document.querySelectorAll('main > [id^="vista-"]')];
+            function scrollTargets() {
+                const view = views.find(item => !item.classList.contains('hidden'));
+                const targets = [document.scrollingElement];
+                if (view) [view, ...view.querySelectorAll('*')].forEach(element => {
+                    if (element.scrollTop > 0 && element.getClientRects().length &&
+                        !element.closest('form, aside, nav, [role="dialog"]') &&
+                        /auto|scroll/.test(getComputedStyle(element).overflowY)) targets.push(element);
+                });
+                return targets.filter(Boolean);
+            }
+            let frame = 0;
+            function refresh() {
+                if (frame) return;
+                frame = requestAnimationFrame(() => {
+                    frame = 0;
+                    button.classList.toggle('is-visible', scrollTargets().some(element => element.scrollTop > 220));
+                });
+            }
+            button.addEventListener('click', () => {
+                const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+                scrollTargets().forEach(element => element.scrollTo({top: 0, behavior}));
+            });
+            document.addEventListener('scroll', refresh, {capture: true, passive: true});
+            window.addEventListener('resize', refresh, {passive: true});
+            const observer = new MutationObserver(refresh);
+            views.forEach(view => observer.observe(view, {attributes: true, attributeFilter: ['class']}));
+            refresh();
+        })();
     </script>
 </body>
 </html>
