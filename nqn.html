@@ -144,24 +144,24 @@
             #member-form { min-height: 0; flex: 1 1 auto; overflow-y: auto; }
         }
         @media (min-width: 1280px) { #member-form-card { width: 390px; } }
-        #vista-rituales { min-height: 0; }
-        #rituales-root { width: 100%; height: 100%; }
-        #vista-rituales .ritual-editor-shell { display: flex; flex-direction: column; height: min(72vh, 780px); min-height: 520px; overflow: hidden !important; }
-        #vista-rituales .ritual-editor-shell .ritual-editor-toolbar { flex: 0 0 auto; }
-        #vista-rituales .ritual-editor-shell .ql-container { flex: 1 1 auto; min-height: 0; height: auto; overflow-y: auto; border: 0; font-family: inherit; }
-        #vista-rituales .ritual-editor-shell .ql-editor { min-height: 100%; height: auto; overflow-y: visible; padding: 1.5rem; font-size: 14pt; line-height: 1.6; }
+        :is(#vista-rituales, #vista-sermones) { min-height: 0; }
+        :is(#rituales-root, #sermones-root) { width: 100%; height: 100%; }
+        :is(#vista-rituales, #vista-sermones) .ritual-editor-shell { display: flex; flex-direction: column; height: min(72vh, 780px); min-height: 520px; overflow: hidden !important; }
+        :is(#vista-rituales, #vista-sermones) .ritual-editor-shell .ritual-editor-toolbar { flex: 0 0 auto; }
+        :is(#vista-rituales, #vista-sermones) .ritual-editor-shell .ql-container { flex: 1 1 auto; min-height: 0; height: auto; overflow-y: auto; border: 0; font-family: inherit; }
+        :is(#vista-rituales, #vista-sermones) .ritual-editor-shell .ql-editor { min-height: 100%; height: auto; overflow-y: visible; padding: 1.5rem; font-size: 14pt; line-height: 1.6; }
         @media (max-width: 767px) {
-            #vista-rituales .ritual-editor-shell { height: 68dvh; min-height: 430px; }
+            :is(#vista-rituales, #vista-sermones) .ritual-editor-shell { height: 68dvh; min-height: 430px; }
         }
-        #vista-rituales .ritual-rich-content ul { list-style: disc; padding-left: 2rem; }
-        #vista-rituales .ritual-rich-content ol { list-style: decimal; padding-left: 2rem; }
-        #vista-rituales .ritual-rich-content li.ql-indent-1 { margin-left: 2rem; }
-        #vista-rituales .ritual-rich-content li.ql-indent-2 { margin-left: 4rem; }
-        #vista-rituales .ritual-rich-content li.ql-indent-3 { margin-left: 6rem; }
-        #vista-rituales .ql-font-merriweather { font-family: Merriweather, serif; }
-        #vista-rituales .ql-font-montserrat { font-family: Montserrat, sans-serif; }
-        #vista-rituales .ql-font-sabon { font-family: Sabon, "Sabon LT Std", Garamond, serif; }
-        #vista-rituales .ql-font-gill-sans { font-family: "Gill Sans", "Gill Sans MT", Calibri, sans-serif; }
+        :is(#vista-rituales, #vista-sermones) .ritual-rich-content ul { list-style: disc; padding-left: 2rem; }
+        :is(#vista-rituales, #vista-sermones) .ritual-rich-content ol { list-style: decimal; padding-left: 2rem; }
+        :is(#vista-rituales, #vista-sermones) .ritual-rich-content li.ql-indent-1 { margin-left: 2rem; }
+        :is(#vista-rituales, #vista-sermones) .ritual-rich-content li.ql-indent-2 { margin-left: 4rem; }
+        :is(#vista-rituales, #vista-sermones) .ritual-rich-content li.ql-indent-3 { margin-left: 6rem; }
+        :is(#vista-rituales, #vista-sermones) .ql-font-merriweather { font-family: Merriweather, serif; }
+        :is(#vista-rituales, #vista-sermones) .ql-font-montserrat { font-family: Montserrat, sans-serif; }
+        :is(#vista-rituales, #vista-sermones) .ql-font-sabon { font-family: Sabon, "Sabon LT Std", Garamond, serif; }
+        :is(#vista-rituales, #vista-sermones) .ql-font-gill-sans { font-family: "Gill Sans", "Gill Sans MT", Calibri, sans-serif; }
         .corporate-logo { object-fit: contain; display: block; }
     </style>
 </head>
@@ -221,6 +221,7 @@
                     <i class="fas fa-book-bible mr-1"></i> Libro Pastoral
                 </button>
 
+                <button onclick="switchTab('sermones')" id="tab-sermones" class="flex-1 md:flex-none whitespace-nowrap px-4 py-2 rounded-md font-bold text-sm text-blue-100 hover:bg-blue-700"><i class="fas fa-book-open mr-1"></i> Sermones</button>
             </nav>
 
             <!-- Global Actions (Visible en md+) -->
@@ -619,6 +620,7 @@
             <div id="rituales-root"></div>
         </div>
 
+        <div id="vista-sermones" class="hidden flex-1 w-full overflow-visible opacity-0 transition-opacity duration-300 bg-slate-100"><div id="sermones-root"></div></div>
     </main>
 
     <!-- Ficha flotante de persona o familia -->
@@ -1031,6 +1033,8 @@
             const vistaMie = document.getElementById('vista-miembros');
             const vistaPet = document.getElementById('vista-peticiones');
             const vistaRit = document.getElementById('vista-rituales');
+            const vistaSer = document.getElementById('vista-sermones');
+            const btnSer = document.getElementById('tab-sermones');
 
 
             const btnCar = document.getElementById('tab-cartelera');
@@ -1047,7 +1051,7 @@
                 syncPersonalToCartelera(false);
             }
 
-            [vistaCar, vistaPer, vistaMie, vistaPet, vistaRit].forEach(vista => {
+            [vistaCar, vistaPer, vistaMie, vistaPet, vistaRit, vistaSer].forEach(vista => {
                 vista.classList.add('hidden', 'opacity-0');
                 vista.classList.remove('flex');
             });
@@ -1056,9 +1060,13 @@
             btnMie.className = inactiveClass;
             btnPet.className = inactiveClass;
             btnRit.className = inactiveClass;
+            btnSer.className = inactiveClass;
 
 
-            if (tab === 'cartelera') {
+            if (tab === 'sermones') {
+                vistaSer.classList.remove('hidden','opacity-0');
+                btnSer.className = activeClass;
+            } else if (tab === 'cartelera') {
                 renderWeek(); // Refrescar combos
                 vistaCar.classList.remove('hidden', 'opacity-0');
                 vistaCar.classList.add('flex');
@@ -4290,7 +4298,7 @@ const ritualCeremoniesData = [
 
 // --- COMPONENTES UI ---
 
-const RitualSidebar = ({ ceremonies, activeId, onSelect, isOpen, toggleSidebar, searchTerm, setSearchTerm }) => {
+const RitualSidebar = ({ ceremonies, activeId, onSelect, isOpen, toggleSidebar, searchTerm, setSearchTerm, bookName='RITUALES' }) => {
   const filtered = ceremonies.filter(c => 
     c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.id.includes(searchTerm) ||
@@ -4302,7 +4310,7 @@ const RitualSidebar = ({ ceremonies, activeId, onSelect, isOpen, toggleSidebar, 
       <div className="p-6 border-b border-gray-700 bg-gray-950 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <BookOpen className="text-blue-500" />
-          <h1 className="font-bold text-lg tracking-wider text-blue-500">RITUALES</h1>
+          <h1 className="font-bold text-lg tracking-wider text-blue-500">{bookName}</h1>
         </div>
         <button onClick={toggleSidebar} className="text-blue-200 hover:text-white" title="Ocultar índice">
           <X />
@@ -4576,7 +4584,9 @@ const RitualRichEditor = ({ initialHtml, onContentChange }) => {
   </div>;
 };
 
-const LibroPastoralApp = () => {
+const LibroPastoralApp = ({isSermons=false}) => {
+  const versionsUrl=isSermons?RITUAL_VERSIONS_URL.replace('/ritual_versions','/sermon_versions'):RITUAL_VERSIONS_URL;
+  const sidebarKey=isSermons?'sermon_sidebar_open':'ritual_sidebar_open';
   const [activeId, setActiveId] = useState("01");
   const [settings, setSettings] = useState({
     fontFamily: '"Merriweather", serif',
@@ -4584,7 +4594,7 @@ const LibroPastoralApp = () => {
     fontWeight: 400
   });
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    const saved = localStorage.getItem('ritual_sidebar_open');
+    const saved = localStorage.getItem(sidebarKey);
     return saved === null ? window.innerWidth >= 768 : saved === 'true';
   });
   const [searchTerm, setSearchTerm] = useState("");
@@ -4613,7 +4623,7 @@ const LibroPastoralApp = () => {
   };
 
   useEffect(() => {
-    localStorage.setItem('ritual_sidebar_open', String(sidebarOpen));
+    localStorage.setItem(sidebarKey, String(sidebarOpen));
   }, [sidebarOpen]);
 
   useEffect(() => {
@@ -4622,7 +4632,7 @@ const LibroPastoralApp = () => {
       setVersionStatus('loading');
       setIsEditingVersion(false);
       try {
-        const response = await fetch(`${RITUAL_VERSIONS_URL}/${activeId}?key=${RITUAL_API_KEY}`);
+        const response = await fetch(`${versionsUrl}/${activeId}?key=${RITUAL_API_KEY}`);
         if (response.status === 404) {
           if (!cancelled) {
             const originalText = originalAsText(activeCeremony);
@@ -4673,7 +4683,7 @@ const LibroPastoralApp = () => {
         plainText: { stringValue: customPlainText },
         updatedAt: { integerValue: Date.now().toString() }
       }};
-      const response = await fetch(`${RITUAL_VERSIONS_URL}/${activeId}?key=${RITUAL_API_KEY}`, {
+      const response = await fetch(`${versionsUrl}/${activeId}?key=${RITUAL_API_KEY}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -4765,6 +4775,7 @@ const LibroPastoralApp = () => {
       <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
       
       <RitualSidebar 
+        bookName={isSermons?'SERMONES':'RITUALES'}
         ceremonies={ritualCeremoniesData} 
         activeId={activeId} 
         onSelect={setActiveId}
@@ -4803,7 +4814,7 @@ const LibroPastoralApp = () => {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-visible bg-gray-100 p-4 md:p-8 scroll-smooth pb-20" id="ritual-main-content">
+        <main className="flex-1 overflow-y-visible bg-gray-100 p-4 md:p-8 scroll-smooth pb-20" id={isSermons?'sermon-main-content':'ritual-main-content'}>
           {viewMode === 'original' ? <RitualCeremonyContent 
             data={activeCeremony} 
             settings={settings} 
@@ -4822,6 +4833,84 @@ const LibroPastoralApp = () => {
 };
 const ritualRoot = ReactDOM.createRoot(document.getElementById('rituales-root'));
 ritualRoot.render(<LibroPastoralApp />);
+const sermonRoot = ReactDOM.createRoot(document.getElementById('sermones-root'));
+const SermonesApp = () => {
+  const [notes,setNotes]=useState([]),[active,setActive]=useState(null),[query,setQuery]=useState('');
+  const [sidebar,setSidebar]=useState(false),[status,setStatus]=useState('Cargando apuntes…'),[busy,setBusy]=useState(true),[dirty,setDirty]=useState(false);
+  const notesRef=React.useRef([]),dirtyRef=React.useRef(false);
+  const base=RITUAL_VERSIONS_URL.replace('/ritual_versions','/sermon_versions');
+  const current=notes.find(note=>note.id===active);
+  const safeHtml=html=>{
+    const doc=new DOMParser().parseFromString(html||'','text/html');
+    doc.querySelectorAll('script,style,iframe,object,embed,svg,math').forEach(node=>node.remove());
+    doc.body.querySelectorAll('*').forEach(node=>[...node.attributes].forEach(attr=>{if(attr.name.startsWith('on')||['src','href','srcdoc'].includes(attr.name))node.removeAttribute(attr.name);}));
+    return doc.body.innerHTML;
+  };
+  const updateNotes=value=>{notesRef.current=value;setNotes(value);};
+  const markDirty=value=>{dirtyRef.current=value;setDirty(value);};
+  useEffect(()=>{
+    let cancelled=false;
+    (async()=>{try{
+      const loaded=[];let token='';
+      do {
+        const response=await fetch(base+'?pageSize=100&key='+RITUAL_API_KEY+(token?'&pageToken='+encodeURIComponent(token):''));
+        if(!response.ok)throw Error('HTTP '+response.status);
+        const data=await response.json();
+        (data.documents||[]).forEach(doc=>{const f=doc.fields||{};loaded.push({id:doc.name.split('/').pop(),title:f.title?.stringValue||f.ceremonyTitle?.stringValue||'Apunte sin título',html:safeHtml(f.contentHtml?.stringValue||''),text:f.plainText?.stringValue||f.content?.stringValue||'',delta:f.contentDelta?.stringValue||'',saved:true});});
+        token=data.nextPageToken||'';
+      }while(token);
+      if(!cancelled){updateNotes(loaded);setActive(loaded[0]?.id||null);setStatus(loaded.length?'Apuntes cargados':'Todavía no hay apuntes. Agregá el primero.');}
+    }catch{if(!cancelled)setStatus('No se pudieron cargar los apuntes de Firebase. Recargá la página para reintentar.');}
+    finally{if(!cancelled)setBusy(false);}})();
+    const guard=event=>{if(notesRef.current.some(note=>note.pending)){event.preventDefault();event.returnValue='';}};
+    window.addEventListener('beforeunload',guard);
+    return()=>{cancelled=true;window.removeEventListener('beforeunload',guard);};
+  },[]);
+  const canLeave=()=>!dirtyRef.current||confirm('Hay cambios sin guardar. ¿Continuar? Se conservarán en esta sesión, pero aún no están en Firebase.');
+  const choose=id=>{if(canLeave()){setActive(id);markDirty(Boolean(notesRef.current.find(n=>n.id===id)?.pending));setSidebar(false);}};
+  const add=()=>{if(busy||!canLeave())return;const note={id:'note-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),title:'Nuevo apunte',html:'<p><br></p>',text:'',saved:false,pending:true};updateNotes([...notesRef.current,note]);setActive(note.id);markDirty(true);setStatus('Nuevo apunte sin guardar');};
+  const change=(id,fields)=>{updateNotes(notesRef.current.map(n=>n.id===id?{...n,...fields,pending:true}:n));markDirty(true);};
+  const save=async()=>{
+    if(!current||busy)return;if(!current.title.trim()){setStatus('Escribí un título para el apunte.');return;}
+    setBusy(true);setStatus('Guardando…');
+    const note={...current};
+    try{
+      const response=await fetch(base+'/'+encodeURIComponent(note.id)+'?key='+RITUAL_API_KEY,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{title:{stringValue:note.title.trim()},contentHtml:{stringValue:note.html},plainText:{stringValue:note.text||''},contentDelta:{stringValue:note.delta||''},updatedAt:{integerValue:String(Date.now())}}})});
+      if(!response.ok)throw Error();
+      updateNotes(notesRef.current.map(n=>n.id===note.id?{...n,saved:true,pending:false}:n));markDirty(false);setStatus('Apunte guardado en Firebase');
+    }catch{setStatus('No se pudo guardar. Tu apunte sigue en pantalla; no cierres la página.');}
+    finally{setBusy(false);}
+  };
+  const remove=async()=>{
+    if(!current||busy||!confirm('¿Eliminar el apunte «'+current.title+'»? Esta acción no se puede deshacer.'))return;
+    setBusy(true);
+    try{
+      if(current.saved){const response=await fetch(base+'/'+encodeURIComponent(current.id)+'?key='+RITUAL_API_KEY,{method:'DELETE'});if(!response.ok&&response.status!==404)throw Error();}
+      const remaining=notesRef.current.filter(n=>n.id!==active);updateNotes(remaining);setActive(remaining[0]?.id||null);markDirty(Boolean(remaining[0]?.pending));setStatus('Apunte eliminado');
+    }catch{setStatus('No se pudo eliminar. El apunte se conserva.');}finally{setBusy(false);}
+  };
+  return <div className="bg-gray-100 text-gray-900 min-h-screen">
+    <aside className={`${sidebar?'flex':'hidden'} fixed inset-y-0 left-0 z-50 w-72 bg-blue-900 text-blue-50 flex-col shadow-2xl no-print`}>
+      <div className="p-5 flex justify-between font-bold"><span>SERMONES</span><button onClick={()=>setSidebar(false)} aria-label="Cerrar listado">×</button></div>
+      <div className="p-3"><input aria-label="Buscar apuntes" className="w-full p-2 rounded text-gray-900" placeholder="Buscar apuntes…" value={query} onChange={e=>setQuery(e.target.value)}/><button disabled={busy} className="mt-3 w-full bg-blue-600 p-2 rounded" onClick={add}>+ Agregar apunte</button></div>
+      <nav className="flex-1 overflow-y-auto">{notes.filter(n=>(n.title+' '+n.text).toLowerCase().includes(query.toLowerCase())).map(n=><button key={n.id} disabled={busy} onClick={()=>choose(n.id)} className={`block w-full text-left p-4 border-b border-blue-800 ${n.id===active?'bg-blue-700':''}`}>{n.title}{n.pending?' •':''}</button>)}</nav>
+      <p className="p-4 text-xs text-blue-200">Apuntes Pastorales</p>
+    </aside>
+    <div className="sticky top-0 z-30 bg-white border-b p-3 flex flex-wrap gap-2 no-print">
+      <button className="border rounded px-3 py-2" onClick={()=>setSidebar(!sidebar)}>☰ Apuntes</button>
+      <button disabled={busy} className="border rounded px-3 py-2" onClick={add}>+ Agregar</button>
+      <button disabled={busy||!current} className="bg-blue-700 text-white rounded px-3 py-2 disabled:opacity-40" onClick={save}>Guardar en Firebase</button>
+      <button disabled={busy||!current} className="border border-red-200 text-red-700 rounded px-3 py-2" onClick={remove}>Eliminar apunte</button>
+      <span role="status" className="text-xs self-center">{status}{dirty?' · Cambios sin guardar':''}</span>
+    </div>
+    <main className="p-4 md:p-8 max-w-5xl mx-auto">
+      {current?<><label className="block font-bold mb-2" htmlFor="sermon-note-title">Título del apunte</label><input id="sermon-note-title" disabled={busy} className="w-full bg-white border rounded p-3 mb-4 text-xl font-bold" value={current.title} onChange={e=>change(current.id,{title:e.target.value})}/>
+        <div inert={busy?'':undefined}><RitualRichEditor key={current.id} initialHtml={current.html} onContentChange={({html,delta,text})=>change(current.id,{html,delta:JSON.stringify(delta),text})}/></div>
+        <p className="text-center italic text-gray-500 py-8">todos es por él y para él.</p></>:<p className="p-8 text-center text-gray-500">Agregá un apunte para comenzar a escribir.</p>}
+    </main>
+  </div>;
+};
+sermonRoot.render(<SermonesApp />);
 
 
     </script>
