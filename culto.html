@@ -322,7 +322,7 @@ const back=document.createElement('a');
 const returnFile=context.get('volver');
 let validReturn=false;
 try {const decoded=decodeURIComponent(returnFile||'');validReturn=/^[^/\\:?#]+\.html$/i.test(decoded);}catch{}
-back.href=validReturn?returnFile:(location.protocol==='file:'?'Gestor%20IMPA%208.1.html':'index.html');back.textContent='← Volver a Cartelera';back.style.cssText='font-weight:bold;color:#1e40af;margin-right:18px';contextBar.append(back);
+back.href=location.protocol==='file:'?(validReturn?returnFile:'Gestor%20IMPA%208.1.html'):'https://prmilton.github.io/impa/nqn.html';back.textContent='← Volver a Cartelera';back.style.cssText='font-weight:bold;color:#1e40af;margin-right:18px';contextBar.append(back);
 const contextText=document.createElement('span');contextText.textContent=[dayNames[activeDay],context.get('fecha'),context.get('equipo')].filter(Boolean).join(' · ');contextBar.append(contextText);
 contextBar.style.cssText='padding:12px 18px;background:#eef2f6;color:#334155;border-bottom:1px solid #cbd5e1;font-size:13px';$('.appbar').after(contextBar);
 const integrationStyle=document.createElement('style');integrationStyle.textContent='@media print{.integration-context{display:none!important}}';document.head.append(integrationStyle);
