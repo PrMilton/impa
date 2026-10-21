@@ -132,6 +132,54 @@
         }
         #vista-peticiones .min-h-screen-mobile { min-height: calc(100vh - 92px); min-height: calc(100dvh - 92px); }
         #vista-peticiones .scrollbar-hide::-webkit-scrollbar { display: none; }
+        /* Colores explícitos: los campos no deben heredar el texto blanco del tema global. */
+        #vista-peticiones {
+            --petition-bg: #e7e5e4; --petition-paper: #ffffff;
+            --petition-field: #fafaf9; --petition-text: #1c1917;
+            --petition-muted: #57534e; --petition-border: #a8a29e;
+            --petition-accent: #1d4ed8; --petition-selected: #dbeafe;
+            color: var(--petition-text); background: var(--petition-bg);
+            color-scheme: light;
+        }
+        .dark #vista-peticiones {
+            --petition-bg: #111827; --petition-paper: #1f2937;
+            --petition-field: #111827; --petition-text: #f3f4f6;
+            --petition-muted: #cbd5e1; --petition-border: #64748b;
+            --petition-accent: #93c5fd; --petition-selected: #1e3a5f;
+            color-scheme: dark;
+        }
+        #vista-peticiones .peticiones-app { background: var(--petition-bg); color: var(--petition-text); }
+        #vista-peticiones :is(header, section).bg-white {
+            background: var(--petition-paper); border-color: var(--petition-border);
+        }
+        #vista-peticiones :is(.text-stone-800, .text-stone-700) { color: var(--petition-text); }
+        #vista-peticiones :is(.text-stone-600, .text-stone-500, .text-stone-400, .text-stone-300) { color: var(--petition-muted); }
+        #vista-peticiones :is(.bg-stone-50, .bg-stone-100, .bg-stone-200) { background-color: var(--petition-field); }
+        #vista-peticiones [class~="bg-stone-50/50"] { background: var(--petition-field); }
+        #vista-peticiones :is(input:not([type=checkbox]):not([type=radio]), textarea, select) {
+            background: var(--petition-field); color: var(--petition-text);
+            border-color: var(--petition-border); caret-color: var(--petition-text);
+            font-size: 14px; line-height: 1.6; opacity: 1;
+        }
+        #vista-peticiones :is(input, textarea)::placeholder { color: var(--petition-muted); opacity: 1; }
+        #vista-peticiones select option { background: var(--petition-field); color: var(--petition-text); }
+        #vista-peticiones :is(input, textarea, select, button):focus-visible {
+            outline: 2px solid var(--petition-accent); outline-offset: 3px;
+        }
+        #vista-peticiones label:has(input:focus-visible) { outline: 2px solid var(--petition-accent); outline-offset: 2px; }
+        #vista-peticiones label:has(input:checked) {
+            background: var(--petition-selected); color: var(--petition-text); border-color: var(--petition-accent);
+        }
+        #vista-peticiones #peticiones-form label { font-size: 12px; }
+        #vista-peticiones [class~="bg-emerald-50/60"] { background: #ecfdf5; border-color: #059669; }
+        #vista-peticiones .bg-brand-50 { background: var(--petition-selected); }
+        #vista-peticiones :is(.text-brand-500, .text-brand-600, .text-brand-700) { color: var(--petition-accent); }
+        .dark #vista-peticiones [class~="bg-emerald-50/60"] { background: #12352e; }
+        .dark #vista-peticiones :is(.text-emerald-700, .text-emerald-800, .text-emerald-900) { color: #a7f3d0; }
+        #vista-peticiones section.bg-stone-900 { background: #172033; color: #f8fafc; }
+        #vista-peticiones section.bg-stone-900 .whitespace-pre-wrap { color: #f8fafc; }
+        #vista-peticiones section.bg-stone-900 .text-stone-700 { color: #cbd5e1; }
+        #vista-peticiones section.bg-stone-900 :is(p, svg) { opacity: 1; }
         #vista-miembros, #member-detail-modal { font-family: Merriweather, serif; }
         #vista-miembros h2, #vista-miembros h3, #vista-miembros button, #vista-miembros .member-label, #vista-miembros .member-stat,
         #member-detail-modal h2, #member-detail-modal h3, #member-detail-modal button { font-family: Montserrat, sans-serif; }
