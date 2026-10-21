@@ -3497,7 +3497,8 @@
             const emptyForm = {
                 category: 'general', name: '', age: '', situation: '', relationship: 'miembro', relationshipOther: '',
                 solicitor: '', currentStatuses: [], statusOther: '', updateRequired: 'no', updateFrequency: '', observations: '',
-                followUpAuthorized: 'no', includeInWhatsApp: true, displayMode: 'firstName', publicSummary: ''
+                followUpAuthorized: 'no', includeInWhatsApp: true, displayMode: 'fullName', publicSummary: '',
+                sharingVersion: 2, showName: true, showAge: true, showReason: true, showSolicitor: true, showStatus: false, showRelationship: false
             };
             const categories = {
                 general: 'Peticiones generales', chronic: 'Enfermedades crónicas', serious: 'Enfermedades graves y cirugías',
@@ -3548,6 +3549,13 @@
                                 includeInWhatsApp: fields.includeInWhatsApp?.booleanValue ?? false,
                                 displayMode: fields.displayMode?.stringValue || 'firstName',
                                 publicSummary: fields.publicSummary?.stringValue || '',
+                                sharingVersion: Number(fields.sharingVersion?.integerValue || 1),
+                                showName: fields.showName?.booleanValue ?? (fields.displayMode?.stringValue !== 'anonymous'),
+                                showAge: fields.showAge?.booleanValue ?? false,
+                                showReason: fields.showReason?.booleanValue ?? true,
+                                showSolicitor: fields.showSolicitor?.booleanValue ?? true,
+                                showStatus: fields.showStatus?.booleanValue ?? false,
+                                showRelationship: fields.showRelationship?.booleanValue ?? false,
                                 createdAt: parseInt(fields.createdAt?.integerValue || '0')
                             };
                         });
@@ -3600,7 +3608,7 @@
 
             const addRequest = async (e) => {
                 e.preventDefault();
-                if (!formData.name.trim() || (formData.includeInWhatsApp && !formData.publicSummary.trim())) return;
+                if (!formData.name.trim()) return;
                 
                 setStatus('connecting');
                 
@@ -3620,8 +3628,10 @@
                         observations: { stringValue: formData.observations },
                         followUpAuthorized: { stringValue: formData.followUpAuthorized },
                         includeInWhatsApp: { booleanValue: formData.includeInWhatsApp },
-                        displayMode: { stringValue: formData.displayMode },
-                        publicSummary: { stringValue: formData.publicSummary },
+                        displayMode: { stringValue: formData.showName ? formData.displayMode : 'anonymous' },
+                        publicSummary: { stringValue: formData.showReason ? formData.situation : '' },
+                        sharingVersion: { integerValue: '2' },
+                        ...Object.fromEntries(['showName','showAge','showReason','showSolicitor','showStatus','showRelationship'].map(key => [key, { booleanValue: formData[key] }])),
                         createdAt: { integerValue: (editingId ? (requests.find(r => r.id === editingId)?.createdAt || Date.now()) : Date.now()).toString() },
                         updatedAt: { integerValue: Date.now().toString() }
                     }
@@ -3661,6 +3671,10 @@
                 setFormData({
                     ...emptyForm,
                     ...req,
+                    sharingVersion: 2,
+                    displayMode: req.displayMode === 'anonymous' ? 'fullName' : req.displayMode,
+                    situation: req.sharingVersion === 2 ? req.situation : req.publicSummary,
+                    observations: req.sharingVersion === 2 ? req.observations : [req.observations, req.situation ? 'Motivo privado anterior: ' + req.situation : ''].filter(Boolean).join('\n\n'),
                     currentStatuses: Array.isArray(req.currentStatuses) ? req.currentStatuses : []
                 });
                 document.getElementById('peticiones-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3668,7 +3682,7 @@
 
             const getPublicName = (req) => {
                 const name = req.name.trim();
-                if (req.displayMode === 'anonymous') return 'Una persona';
+                if (req.showName === false || req.displayMode === 'anonymous') return 'Una persona';
                 if (req.displayMode === 'initials') return name.split(/\s+/).filter(Boolean).map(part => part[0].toUpperCase() + '.').join(' ');
                 if (req.displayMode === 'firstName') return name.split(/\s+/)[0] || 'Una persona';
                 return name || 'Una persona';
@@ -3676,8 +3690,22 @@
 
             const cleanWhatsAppText = (value) => String(value || '').replace(/[*_~`]/g, '').replace(/\s+/g, ' ').trim();
 
+            const publicReason = req => req.showReason === false ? '' : (req.sharingVersion === 2 ? req.situation : req.publicSummary);
+            const sharingToggle = (key) => <label className="flex items-center gap-2 mt-2 text-xs text-stone-600"><input type="checkbox" name={key} checked={formData[key]} onChange={handleInputChange} />Mostrar en WhatsApp</label>;
+            const publicRequestText = req => {
+                const age = req.showAge && req.age ? ` · ${cleanWhatsAppText(req.age)} años` : '';
+                let text = `\n🔹 *${cleanWhatsAppText(getPublicName(req))}${age}*\n`;
+                if (publicReason(req)?.trim()) text += `💬 _${cleanWhatsAppText(publicReason(req))}_\n`;
+                if (req.showSolicitor !== false && req.solicitor?.trim()) text += `🤝 *Solicitante:* ${cleanWhatsAppText(req.solicitor)}\n`;
+                if (req.showStatus) {
+                    const state = [...(req.currentStatuses || []), req.statusOther].filter(Boolean).join(', ');
+                    if (state) text += `🌿 *Estado:* ${cleanWhatsAppText(state)}\n`;
+                }
+                if (req.showRelationship && req.relationship) text += `👥 *Relación:* ${cleanWhatsAppText(req.relationship === 'otro' ? req.relationshipOther : req.relationship)}\n`;
+                return text;
+            };
             const generateWhatsAppText = () => {
-                const publishable = requests.filter(req => req.includeInWhatsApp && req.publicSummary?.trim());
+                const publishable = requests.filter(req => req.includeInWhatsApp && (req.sharingVersion === 2 || req.publicSummary?.trim()));
                 if (publishable.length === 0) return "";
                 let text = `🙏✨ *MOTIVOS DE ORACIÓN* ✨🙏\n`;
                 text += `_“Mas yo haré venir sanidad para ti, y sanaré tus heridas, dice Jehová...”_\n`;
@@ -3688,12 +3716,7 @@
                     if (grouped.length === 0) return;
                     text += `${categoryEmojis[categoryKey] || '🙏'} *${categories[categoryKey].toUpperCase()}*\n`;
                     grouped.forEach(req => {
-                        const publicName = cleanWhatsAppText(getPublicName(req));
-                        const publicSummary = cleanWhatsAppText(req.publicSummary);
-                        const solicitor = cleanWhatsAppText(req.solicitor) || 'No informado';
-                        text += `\n🔹 *${publicName}*\n`;
-                        text += `💬 _${publicSummary}_\n`;
-                        text += `🤝 *Solicitante:* ${solicitor}\n`;
+                        text += publicRequestText(req);
                     });
                     text += `\n`;
                 });
@@ -3776,24 +3799,26 @@
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px] gap-3">
-                                            <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Nombre completo</label><input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Nombre y apellido" className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500" required /></div>
-                                            <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Edad</label><input type="number" min="0" max="120" name="age" value={formData.age} onChange={handleInputChange} placeholder="Opc." className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500" /></div>
+                                            <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Nombre completo</label><input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Nombre y apellido" className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500" required />{sharingToggle('showName')}{formData.showName && <select aria-label="Formato del nombre en WhatsApp" name="displayMode" value={formData.displayMode} onChange={handleInputChange} className="w-full mt-2 p-2 border rounded-xl"><option value="fullName">Nombre completo</option><option value="firstName">Solo primer nombre</option><option value="initials">Iniciales</option></select>}</div>
+                                            <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Edad</label><input type="number" min="0" max="120" name="age" value={formData.age} onChange={handleInputChange} placeholder="Opc." className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500" />{sharingToggle('showAge')}</div>
                                         </div>
 
-                                        <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Motivo privado de la petición</label><textarea name="situation" value={formData.situation} onChange={handleInputChange} rows="3" placeholder="Información interna para organizar el seguimiento" className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500 resize-y"></textarea></div>
+                                        <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Pedido de oración — texto para compartir</label><textarea name="situation" value={formData.situation} onChange={handleInputChange} rows="3" placeholder="Ej.: Pedimos oración por su pronta recuperación." className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500 resize-y"></textarea>{sharingToggle('showReason')}<p className="text-xs text-stone-600 mt-2">Si está tildado se comparte el texto completo. Guardá diagnósticos y detalles sensibles en Observaciones privadas.</p></div>
 
                                         <div>
                                             <label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Relación con la congregación</label>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{['miembro','familiar','conocido','otro'].map(item => <label key={item} className={`p-2 rounded-xl border text-xs font-bold capitalize cursor-pointer text-center ${formData.relationship === item ? 'bg-brand-50 border-brand-500 text-brand-700' : 'bg-stone-50 border-stone-200 text-stone-500'}`}><input type="radio" name="relationship" value={item} checked={formData.relationship === item} onChange={handleInputChange} className="sr-only" />{item}</label>)}</div>
                                             {formData.relationship === 'otro' && <input type="text" name="relationshipOther" value={formData.relationshipOther} onChange={handleInputChange} placeholder="Especificar relación" className="w-full mt-2 p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm outline-none focus:border-brand-500" />}
+                                            {sharingToggle('showRelationship')}
                                         </div>
 
-                                        <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Nombre del solicitante</label><input type="text" name="solicitor" value={formData.solicitor} onChange={handleInputChange} placeholder="Persona a quien consultar" className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500" /><p className="text-[10px] text-emerald-700 mt-1">Se mostrará en el mensaje de WhatsApp como contacto de referencia.</p></div>
+                                        <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Nombre del solicitante</label><input type="text" name="solicitor" value={formData.solicitor} onChange={handleInputChange} placeholder="Persona a quien consultar" className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-500" />{sharingToggle('showSolicitor')}</div>
 
                                         <div>
                                             <label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">Estado actual (puede marcar varios)</label>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">{statusOptions.map(item => <label key={item} className="flex items-center gap-2 p-2.5 rounded-xl bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-600 cursor-pointer"><input type="checkbox" checked={formData.currentStatuses.includes(item)} onChange={() => toggleStatus(item)} className="accent-brand-600" />{item}</label>)}</div>
                                             <input type="text" name="statusOther" value={formData.statusOther} onChange={handleInputChange} placeholder="Otro estado (especificar)" className="w-full mt-2 p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm outline-none focus:border-brand-500" />
+                                            {sharingToggle('showStatus')}
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3806,10 +3831,10 @@
                                         <div><label className="block text-[10px] font-black uppercase tracking-wider text-stone-500 mb-2">¿Autorizado seguimiento?</label><div className="flex gap-3">{[['si','Sí'],['no','No']].map(([value,label]) => <label key={value} className="flex-1 p-2.5 text-center bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold cursor-pointer"><input type="radio" name="followUpAuthorized" value={value} checked={formData.followUpAuthorized === value} onChange={handleInputChange} className="mr-2 accent-brand-600" />{label}</label>)}</div></div>
 
                                         <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/60 p-4 space-y-4">
-                                            <h3 className="text-xs font-black uppercase tracking-wider text-emerald-800">Contenido público para WhatsApp</h3>
+                                            <h3 className="text-xs font-black uppercase tracking-wider text-emerald-800">Vista previa de esta petición</h3>
                                             <label className="flex items-center gap-3 text-sm font-bold text-emerald-900"><input type="checkbox" name="includeInWhatsApp" checked={formData.includeInWhatsApp} onChange={handleInputChange} className="w-5 h-5 accent-emerald-600" />Incluir en el próximo mensaje</label>
-                                            <div><label className="block text-[10px] font-black uppercase tracking-wider text-emerald-700 mb-2">Cómo mostrar el nombre</label><select name="displayMode" value={formData.displayMode} onChange={handleInputChange} className="w-full p-3 bg-white border border-emerald-200 rounded-xl text-sm"><option value="fullName">Nombre completo</option><option value="firstName">Solo primer nombre</option><option value="initials">Iniciales</option><option value="anonymous">Una persona (anónimo)</option></select></div>
-                                            <div><label className="block text-[10px] font-black uppercase tracking-wider text-emerald-700 mb-2">Resumen público autorizado</label><textarea name="publicSummary" value={formData.publicSummary} onChange={handleInputChange} rows="2" placeholder="Ej.: se encuentra en recuperación; oramos por su pronta mejoría" className="w-full p-3.5 bg-white border border-emerald-200 rounded-xl text-sm outline-none focus:border-emerald-500 resize-y" required={formData.includeInWhatsApp}></textarea><p className="text-[10px] text-emerald-700 mt-1">En WhatsApp aparecerán este resumen, el nombre público elegido y el solicitante.</p></div>
+                                            <pre className="whitespace-pre-wrap text-sm font-sans text-emerald-900" aria-live="polite">{formData.includeInWhatsApp ? publicRequestText(formData) : 'Esta petición queda privada y no se incluye en WhatsApp.'}</pre>
+                                            <p className="text-xs text-emerald-700">Se genera con las tildes del formulario. Guardá los cambios para actualizar la lista general de WhatsApp.</p>
                                         </div>
 
                                         <div className="flex gap-2">
