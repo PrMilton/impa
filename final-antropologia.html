@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#172554">
+  <title>IBMEPA · Examen final de Antropología</title>
+  <style>
+    :root{--navy:#172554;--blue:#2563eb;--blue-soft:#eff6ff;--paper:#fffdf9;--bg:#e9eef4;--line:#ccd7e5;--text:#1f2937;--muted:#64748b;--green:#15803d;--red:#b91c1c;--amber:#b45309}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:linear-gradient(145deg,#e8eef7,#f7f4ed);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;overflow-x:hidden}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .top{background:var(--navy);color:#fff;padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));display:flex;align-items:center;justify-content:space-between;gap:14px;position:sticky;top:0;z-index:20;box-shadow:0 4px 20px #0f172a24}
+    .identity{display:flex;align-items:center;gap:11px;min-width:0}.identity img{width:35px;height:45px;object-fit:contain}.identity strong{display:block;font-size:17px}.identity small{display:block;color:#bfdbfe;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .connection{padding:6px 9px;border-radius:999px;background:#ffffff16;color:#dbeafe;font-size:11px;font-weight:800;white-space:nowrap}
+    .wrap{width:min(980px,100%);margin:0 auto;padding:24px 16px 60px;min-width:0}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:clamp(18px,4vw,30px);box-shadow:0 10px 35px #0f172a0e}
+    .access{width:100%;max-width:520px;margin:5vh auto 0;min-width:0}.access h1{margin:0 0 8px;color:var(--navy);font-size:clamp(25px,5vw,34px);line-height:1.08}.access p{overflow-wrap:anywhere}.eyebrow{color:var(--blue);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.muted{color:var(--muted)}
+    .field{display:grid;gap:6px;margin:15px 0;min-width:0}.field label{font-size:12px;font-weight:850;color:#475569}.field input{width:100%;min-width:0;padding:13px 14px;border:1px solid #afbdd0;border-radius:10px;background:#fff;font-size:16px}.field input:focus{outline:3px solid #bfdbfe;border-color:var(--blue)}
+    .btn{border:1px solid #bcc9d9;background:#fff;color:#243044;padding:11px 15px;border-radius:10px;font-weight:800;min-height:44px}.btn:hover{border-color:#7d96b7}.primary{background:var(--blue);border-color:var(--blue);color:#fff}.primary:hover{background:#1d4ed8}.btn:disabled{cursor:not-allowed;opacity:.48}.full{width:100%}.notice{padding:12px 14px;border-radius:10px;background:var(--blue-soft);color:#1e40af;margin:14px 0}.warning{background:#fef3c7;color:#92400e}.error{background:#fee2e2;color:#991b1b}
+    .personal-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.personal-grid .wide{grid-column:1/-1}.form-head h1{margin:4px 0;color:var(--navy)}
+    .exam-shell{display:grid;gap:16px}.exam-toolbar{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:13px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;position:sticky;top:81px;z-index:10;box-shadow:0 8px 24px #0f172a12}.student-line strong{display:block;color:var(--navy)}.student-line small{color:var(--muted)}.timer{font-size:20px;font-weight:950;color:#1e40af;background:#dbeafe;padding:8px 11px;border-radius:9px;align-self:center}.timer.urgent{background:#fee2e2;color:#991b1b}.progress-line{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.progress{height:9px;background:#dbe3ef;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#15803d);width:0;transition:width .2s}.progress-count{font-size:12px;font-weight:850;color:#475569}
+    .question-card{padding:clamp(18px,5vw,36px)}.question-number{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted);font-weight:800;font-size:13px}.chapter{background:#e0e7ff;color:#3730a3;padding:6px 9px;border-radius:999px;font-size:11px}.statement{font-size:clamp(21px,3.2vw,30px);line-height:1.3;color:#172554;margin:28px 0 30px;font-weight:750}.answer-options{display:grid;grid-template-columns:1fr 1fr;gap:14px}.answer{min-height:76px;border:2px solid #cbd5e1;border-radius:14px;background:#fff;font-size:18px;font-weight:900;color:#334155;display:flex;justify-content:center;align-items:center;gap:9px}.answer:hover{border-color:#60a5fa;background:#f8fbff}.answer.selected.true{background:#dcfce7;border-color:#16a34a;color:#166534}.answer.selected.false{background:#fee2e2;border-color:#dc2626;color:#991b1b}.nav-actions{display:flex;justify-content:space-between;gap:10px;margin-top:25px}.nav-actions .btn{min-width:120px}
+    .question-map{display:grid;grid-template-columns:repeat(10,1fr);gap:7px}.map-btn{aspect-ratio:1;border:1px solid #bdc9d8;border-radius:8px;background:#fff;color:#475569;font-weight:850}.map-btn.answered{background:#dbeafe;border-color:#60a5fa;color:#1e40af}.map-btn.current{outline:3px solid #93c5fd;background:var(--navy);color:#fff}.finish-card h2{margin-top:0;color:var(--navy)}.finish-row{display:flex;justify-content:space-between;align-items:center;gap:14px}.security-note{font-size:12px;color:var(--muted);margin:10px 0 0}.delivered{text-align:center;max-width:620px;margin:7vh auto}.delivered .check{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;background:#dcfce7;color:#166534;font-size:36px;font-weight:900}.delivered h1{color:var(--navy)}
+    footer{text-align:center;color:#64748b;font-size:11px;padding:24px 15px}
+    @media(max-width:700px){.wrap{padding:15px 10px 45px}.top{padding-top:max(9px,env(safe-area-inset-top))}.identity small{max-width:210px}.personal-grid{grid-template-columns:1fr}.personal-grid .wide{grid-column:auto}.exam-toolbar{top:69px}.question-map{grid-template-columns:repeat(5,1fr)}.answer-options{grid-template-columns:1fr}.answer{min-height:64px}.statement{margin:22px 0}.finish-row{align-items:stretch;flex-direction:column}.finish-row .btn{width:100%}}
+    @media(max-width:380px){.identity small{display:none}.connection{display:none}.question-card{padding:17px 14px}.nav-actions .btn{min-width:0;flex:1}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.progress i{transition:none}}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="identity"><img src="https://firebasestorage.googleapis.com/v0/b/formulario-7d5cb.firebasestorage.app/o/logo%20iglesia%20blanco.png?alt=media&amp;token=2abf9154-8eab-415b-b1f5-37ea5d22871c" alt="Logo institucional"><div><strong>IBMEPA</strong><small>Instituto Bíblico Metodista Pentecostal de Argentina</small></div></div>
+    <span id="connection" class="connection">Examen final</span>
+  </header>
+
+  <main class="wrap">
+    <section id="accessView" class="card access">
+      <span class="eyebrow">Evaluación final</span>
+      <h1>Antropología Bíblica</h1>
+      <p class="muted">La Doctrina del Hombre · 20 afirmaciones de Verdadero o Falso</p>
+      <form id="accessForm">
+        <div class="field"><label for="accessKey">Clave de acceso</label><input id="accessKey" name="accessKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" required placeholder="Ingresá la clave facilitada por el docente"></div>
+        <button class="btn primary full">Ingresar al examen</button>
+      </form>
+      <p id="accessMessage" class="notice error hidden"></p>
+    </section>
+
+    <section id="personalView" class="card hidden">
+      <div class="form-head"><span class="eyebrow">Identificación del alumno</span><h1>Antes de comenzar</h1><p class="muted">Completá todos los datos. Luego comenzará el tiempo del examen.</p></div>
+      <form id="personalForm">
+        <div class="personal-grid">
+          <div class="field wide"><label>Nombre y apellido</label><input name="nombre" maxlength="120" autocomplete="name" required></div>
+          <div class="field"><label>DNI</label><input name="dni" inputmode="numeric" maxlength="14" autocomplete="off" required></div>
+          <div class="field"><label>Fecha</label><input name="fecha" type="date" required></div>
+          <div class="field"><label>Iglesia</label><input name="iglesia" maxlength="140" required></div>
+          <div class="field"><label>Nombre de su pastor</label><input name="pastor" maxlength="120" required></div>
+        </div>
+        <div class="notice"><strong>Condiciones:</strong> dispondrás de 40 minutos. Las preguntas aparecerán en orden aleatorio. Los cambios de pestaña quedarán registrados. Las respuestas correctas no se mostrarán al entregar.</div>
+        <button class="btn primary full">Comenzar examen</button>
+      </form>
+      <p id="personalMessage" class="notice error hidden"></p>
+    </section>
+
+    <section id="examView" class="exam-shell hidden">
+      <div class="exam-toolbar">
+        <div class="student-line"><strong id="studentName"></strong><small id="studentMeta"></small></div>
+        <div id="timer" class="timer">40:00</div>
+        <div class="progress-line"><div class="progress"><i id="progressBar"></i></div><span id="progressCount" class="progress-count">0 de 20</span></div>
+      </div>
+      <article class="card question-card">
+        <div class="question-number"><span id="questionPosition">Pregunta 1 de 20</span><span id="questionChapter" class="chapter">Capítulo 1</span></div>
+        <div id="questionText" class="statement"></div>
+        <div class="answer-options">
+          <button type="button" class="answer true" data-answer="V"><span>V</span> Verdadero</button>
+          <button type="button" class="answer false" data-answer="F"><span>F</span> Falso</button>
+        </div>
+        <div class="nav-actions"><button type="button" id="prevQuestion" class="btn">← Anterior</button><button type="button" id="nextQuestion" class="btn primary">Siguiente →</button></div>
+      </article>
+      <div class="card"><strong>Navegación del examen</strong><p class="muted">Los números azules ya tienen respuesta.</p><div id="questionMap" class="question-map"></div></div>
+      <div class="card finish-card"><div class="finish-row"><div><h2>Entrega del examen</h2><p id="finishMessage" class="muted">Respondé las 20 preguntas para habilitar la entrega.</p></div><button id="finishExam" type="button" class="btn primary" disabled>Finalizar y entregar</button></div><p id="tabNotice" class="security-note">Cambios de pestaña registrados: 0</p></div>
+    </section>
+
+    <section id="deliveredView" class="card delivered hidden"><div class="check">✓</div><h1>Examen entregado</h1><p>La entrega quedó registrada correctamente.</p><div id="deliverySummary" class="notice"></div><p class="muted">El resultado y la devolución serán comunicados por el instituto.</p></section>
+  </main>
+
+  <footer>Iglesia Metodista Pentecostal Argentina · Registro Nacional de Culto N° 397 · Personería Jurídica 0509</footer>
+
+  <script>
+    const FIRESTORE='https://firestore.googleapis.com/v1/projects/ibmepa/databases/(default)/documents';
+    const API_KEY='AIzaSyCzfFAbU6zWoWM9vqnxw8gztcvM4xE2Q3Y';
+    const ACCESS_HASH='2b2ca02bf886096926678e438bc9e82524a381f4bd7d34e81c2e12820648fb54';
+    const EXAM_ID='antropologia-final-v1';
+    const DURATION_MINUTES=40;
+    const STORAGE_KEY='ibmepa_final_antropologia_active_v1';
+    const questions=[
+      {id:1,chapter:1,text:'La Biblia enseña que el ser humano es producto del azar y de procesos naturales impersonales.'},
+      {id:2,chapter:1,text:'El hombre fue creado a imagen y semejanza de Dios, lo que le otorga una dignidad especial dentro de la creación.'},
+      {id:3,chapter:2,text:'El propósito de Dios para la humanidad surgió después de la creación del mundo.'},
+      {id:4,chapter:2,text:'El ser humano participa en la historia como instrumento mediante el cual Dios desarrolla su plan redentor.'},
+      {id:5,chapter:3,text:'La imagen de Dios en el hombre se refiere principalmente a su forma física.'},
+      {id:6,chapter:3,text:'Después de la caída, la imagen de Dios en el hombre fue afectada pero no destruida completamente.'},
+      {id:7,chapter:4,text:'La naturaleza tripartita sostiene que el hombre está compuesto por cuerpo, alma y espíritu.'},
+      {id:8,chapter:4,text:'La conciencia humana no tiene relación con el juicio moral de las acciones del hombre.'},
+      {id:9,chapter:5,text:'El estado primitivo del hombre estaba caracterizado por la inocencia original y la ausencia de pecado.'},
+      {id:10,chapter:5,text:'El trabajo fue un castigo que apareció solamente después de la caída del hombre.'},
+      {id:11,chapter:6,text:'La tentación llevó al ser humano a dudar de la palabra de Dios y finalmente a desobedecer su mandato.'},
+      {id:12,chapter:6,text:'La caída del hombre no produjo consecuencias en las relaciones humanas ni en la creación.'},
+      {id:13,chapter:7,text:'El pecado puede definirse como rebelión contra Dios y desviación del estándar divino.'},
+      {id:14,chapter:7,text:'El pecado afecta solamente la conducta externa del ser humano y no su interior.'},
+      {id:15,chapter:8,text:'La salvación comienza por la iniciativa de Dios y no por el esfuerzo humano.'},
+      {id:16,chapter:8,text:'La santificación es un proceso progresivo en el que el creyente es transformado por la obra de Dios.'},
+      {id:17,chapter:9,text:'La nueva vida en Cristo implica una transformación espiritual que permite al creyente vivir en comunión con Dios.'},
+      {id:18,chapter:9,text:'La acción del Espíritu Santo en la vida del creyente consiste únicamente en producir emociones espirituales.'},
+      {id:19,chapter:10,text:'La mortalidad se refiere a la condición del cuerpo humano sujeto a la muerte.'},
+      {id:20,chapter:10,text:'El estado intermedio es el momento final en el que el cuerpo glorificado es recibido inmediatamente después de la muerte.'}
+    ];
+    const $=selector=>document.querySelector(selector);
+    let session=null,currentIndex=0,timerHandle=null,submitting=false;
+    function show(id){['accessView','personalView','examView','deliveredView'].forEach(view=>$('#'+view).classList.toggle('hidden',view!==id))}
+    function onlyDni(value){return String(value||'').replace(/\D/g,'')}
+    function shuffle(values){const out=[...values];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}return out}
+    function localDate(){const now=new Date(),offset=now.getTimezoneOffset();return new Date(now.getTime()-offset*60000).toISOString().slice(0,10)}
+    async function sha256(value){const data=new TextEncoder().encode(value),hash=await crypto.subtle.digest('SHA-256',data);return[...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+    function saveSession(){if(session)localStorage.setItem(STORAGE_KEY,JSON.stringify(session))}
+    function loadSession(){try{const stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(stored?.examId===EXAM_ID&&stored.status==='active'&&stored.endAt>Date.now()-3600000)return stored}catch{}return null}
+    function orderedQuestions(){return session.order.map(id=>questions.find(q=>q.id===id)).filter(Boolean)}
+    function renderQuestion(){const items=orderedQuestions(),question=items[currentIndex];if(!question)return;$('#questionPosition').textContent=`Pregunta ${currentIndex+1} de ${items.length}`;$('#questionChapter').textContent=`Capítulo ${question.chapter}`;$('#questionText').textContent=question.text;document.querySelectorAll('[data-answer]').forEach(button=>button.classList.toggle('selected',session.answers[question.id]===button.dataset.answer));$('#prevQuestion').disabled=currentIndex===0;$('#nextQuestion').disabled=currentIndex===items.length-1;renderProgress();window.scrollTo({top:0,behavior:'smooth'})}
+    function renderProgress(){const answered=Object.keys(session.answers).filter(id=>session.answers[id]).length,total=questions.length;$('#progressBar').style.width=`${answered/total*100}%`;$('#progressCount').textContent=`${answered} de ${total}`;$('#questionMap').innerHTML=orderedQuestions().map((q,index)=>`<button type="button" class="map-btn ${session.answers[q.id]?'answered':''} ${index===currentIndex?'current':''}" data-question-index="${index}" aria-label="Ir a pregunta ${index+1}">${index+1}</button>`).join('');const complete=answered===total;$('#finishExam').disabled=!complete||submitting;$('#finishMessage').textContent=complete?'Las 20 preguntas están respondidas. Ya podés finalizar y entregar.':`Faltan ${total-answered} pregunta${total-answered===1?'':'s'} por responder.`;$('#tabNotice').textContent=`Cambios de pestaña registrados: ${session.tabChanges||0}`}
+    function startTimer(){clearInterval(timerHandle);const update=()=>{const remaining=Math.max(0,session.endAt-Date.now()),seconds=Math.ceil(remaining/1000),minutes=Math.floor(seconds/60),rest=seconds%60;$('#timer').textContent=`${String(minutes).padStart(2,'0')}:${String(rest).padStart(2,'0')}`;$('#timer').classList.toggle('urgent',remaining<=5*60000);if(remaining<=0){clearInterval(timerHandle);submitExam(true)}};update();timerHandle=setInterval(update,1000)}
+    function enterExam(){show('examView');$('#studentName').textContent=session.student.nombre;$('#studentMeta').textContent=`DNI ${session.student.dni} · ${session.student.iglesia}`;renderQuestion();startTimer()}
+    async function request(url,options={}){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url,{...options,signal:controller.signal,headers:{'Content-Type':'application/json',...(options.headers||{})}});if(!response.ok){const message=await response.text();const error=new Error(`Firestore ${response.status}: ${message}`);error.status=response.status;throw error}return response.status===204?{}:response.json()}finally{clearTimeout(timeout)}}
+    function firestoreFields(data){return{examId:{stringValue:EXAM_ID},examTitle:{stringValue:'Examen Final de Antropología Bíblica'},nombre:{stringValue:data.student.nombre},dni:{stringValue:data.student.dni},iglesia:{stringValue:data.student.iglesia},pastor:{stringValue:data.student.pastor},fechaDeclarada:{stringValue:data.student.fecha},startedAt:{timestampValue:new Date(data.startedAt).toISOString()},submittedAt:{timestampValue:new Date(data.submittedAt).toISOString()},timeExpired:{booleanValue:Boolean(data.timeExpired)},tabChanges:{integerValue:String(data.tabChanges||0)},answers:{stringValue:JSON.stringify(data.answers)},questionOrder:{stringValue:JSON.stringify(data.order)},userAgent:{stringValue:navigator.userAgent.slice(0,500)}}}
+    async function submitExam(timeExpired=false){if(submitting||!session)return;const answered=Object.keys(session.answers).filter(id=>session.answers[id]).length;if(!timeExpired&&answered!==questions.length)return;if(!timeExpired&&!confirm('¿Confirmás que querés finalizar y entregar el examen? Después no podrás modificarlo.'))return;submitting=true;renderProgress();$('#finishExam').textContent='Entregando…';const payload={...session,submittedAt:Date.now(),timeExpired,status:'submitted'},docId=`final-antropologia-${session.student.dni}`,url=`${FIRESTORE}/ibmepa_data/${docId}?key=${API_KEY}&currentDocument.exists=false`;try{await request(url,{method:'PATCH',body:JSON.stringify({fields:firestoreFields(payload)})});session=payload;localStorage.removeItem(STORAGE_KEY);localStorage.setItem(`${STORAGE_KEY}_submitted_${session.student.dni}`,JSON.stringify({submittedAt:session.submittedAt}));clearInterval(timerHandle);$('#deliverySummary').innerHTML=`<strong>${session.student.nombre}</strong><br>DNI ${session.student.dni}<br>${timeExpired?'El tiempo finalizó y las respuestas registradas fueron entregadas.':'Las 20 respuestas fueron recibidas.'}`;show('deliveredView')}catch(error){submitting=false;renderProgress();$('#finishExam').textContent='Finalizar y entregar';if(error.status===409||error.status===400&&/exists/i.test(error.message)){alert('Ya existe una entrega registrada para este DNI. Comunicate con el docente si necesitás una nueva oportunidad.')}else alert('No se pudo entregar el examen. Tus respuestas siguen guardadas en este dispositivo. Verificá la conexión e intentá nuevamente.')}}
+
+    $('#accessForm').addEventListener('submit',async event=>{event.preventDefault();const button=event.submitter,message=$('#accessMessage');button.disabled=true;button.textContent='Verificando…';const valid=await sha256(event.currentTarget.elements.accessKey.value)===ACCESS_HASH;button.disabled=false;button.textContent='Ingresar al examen';if(!valid){message.textContent='La clave de acceso no es correcta. Revisá mayúsculas, puntos y signos.';message.classList.remove('hidden');return}message.classList.add('hidden');$('#personalForm').elements.fecha.value=localDate();show('personalView')});
+    $('#personalForm').addEventListener('submit',event=>{event.preventDefault();const form=event.currentTarget,data=new FormData(form),dni=onlyDni(data.get('dni')),message=$('#personalMessage');if(dni.length<7){message.textContent='Ingresá un número de DNI válido, sin puntos.';message.classList.remove('hidden');return}message.classList.add('hidden');session={examId:EXAM_ID,status:'active',student:{nombre:String(data.get('nombre')).trim(),dni,iglesia:String(data.get('iglesia')).trim(),pastor:String(data.get('pastor')).trim(),fecha:String(data.get('fecha'))},order:shuffle(questions.map(q=>q.id)),answers:{},startedAt:Date.now(),endAt:Date.now()+DURATION_MINUTES*60000,tabChanges:0};saveSession();enterExam()});
+    document.addEventListener('click',event=>{const answer=event.target.closest('[data-answer]');if(answer&&session){const question=orderedQuestions()[currentIndex];session.answers[question.id]=answer.dataset.answer;saveSession();renderQuestion();return}const map=event.target.closest('[data-question-index]');if(map){currentIndex=Number(map.dataset.questionIndex);renderQuestion()}});
+    $('#prevQuestion').addEventListener('click',()=>{if(currentIndex>0){currentIndex--;renderQuestion()}});$('#nextQuestion').addEventListener('click',()=>{if(currentIndex<questions.length-1){currentIndex++;renderQuestion()}});$('#finishExam').addEventListener('click',()=>submitExam(false));
+    document.addEventListener('visibilitychange',()=>{if(document.hidden&&session?.status==='active'){session.tabChanges=(session.tabChanges||0)+1;saveSession();renderProgress()}});window.addEventListener('beforeunload',event=>{if(session?.status==='active'){event.preventDefault();event.returnValue=''}});
+    const recovered=loadSession();if(recovered){session=recovered;currentIndex=Math.max(0,orderedQuestions().findIndex(q=>!session.answers[q.id]));if(currentIndex<0)currentIndex=0;enterExam()}
+  </script>
+</body>
+</html>
