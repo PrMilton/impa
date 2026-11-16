@@ -960,6 +960,17 @@ body [class~='text-gray-300'],body [class~='text-gray-200'],body [class~='text-s
 @media screen and (max-width:600px){#dashboardGrid [data-team-card] .grid-cols-2{grid-template-columns:1fr!important}#dashboardGrid [data-team-card] .grid-cols-2>div{min-width:0}#dashboardGrid [data-team-card] .grid-cols-2>div+div{margin-top:12px}}
 
 @media screen {body>header img.corporate-logo{background:#fff!important;border-radius:8px;padding:3px}#vista-peticiones .whitespace-pre-wrap.font-mono{background:var(--ui-soft)!important;color:var(--ui-ink)!important;border:1px solid var(--ui-line)!important;font-family:var(--ui-font)!important;font-size:14px!important;line-height:1.65!important}}
+@media screen {
+body>main{padding:12px 16px 24px!important;box-sizing:border-box}
+#vista-peticiones .peticiones-app>div>.grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:20px!important;align-items:start}
+#vista-peticiones .peticiones-app>div>.grid>.space-y-6{display:contents!important}
+#vista-peticiones .peticiones-app>div>.grid>.space-y-6>section{margin:0!important;min-width:0;padding:20px!important}
+#vista-peticiones section h2{font-size:17px!important;letter-spacing:0!important}
+#vista-peticiones section .whitespace-pre-wrap.font-mono{padding:16px!important}
+#vista-peticiones header p{color:var(--ui-muted)!important}
+@media(max-width:1100px){#vista-peticiones .peticiones-app>div>.grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#vista-peticiones .peticiones-app>div>.grid>.space-y-6:last-child>section{grid-column:1/-1}}
+@media(max-width:767px){body>main{padding:8px 8px 18px!important}#vista-peticiones .peticiones-app>div>.grid{grid-template-columns:1fr!important}}
+}
 </style><style>@media screen {
 :root{--ink:var(--ui-ink);--muted:var(--ui-muted);--green:var(--ui-green);--line:var(--ui-line);--paper:var(--ui-bg);--nav:var(--ui-panel);--gold:var(--ui-gold)}
 body{font:15px/1.55 var(--ui-font)!important;background:var(--ui-bg)!important;color:var(--ui-ink)!important}
@@ -1213,14 +1224,14 @@ validateData=function(d){validateBeforeMinistry(d);if(d.commissions!==undefined)
 render();
 </script><script>// The map is a view of Gestor identities, never a second membership register.
 real=parent.GestorCerca.getState();
-save=function(){return parent.GestorCerca.save(state());};
+save=function(){const ok=parent.GestorCerca.save(state());if(ok)real=parent.GestorCerca.getState();return ok;};
 deleteRecord=function(){toast('Administrá las altas, bajas y vínculos desde Miembros del Gestor.');};
 const editLinkedRecord=editRecord;
-editRecord=function(type,id=''){if(!id){parent.GestorCerca.openMembers();return;}editLinkedRecord(type,id);const f=$('#record-form');f.elements.name.readOnly=true;for(const k of ['phone','ministry'])f.elements[k].readOnly=true;f.elements.familyId.disabled=true;$('#editor-title').textContent='Ubicación y coordinación · '+find(id).name;};
+editRecord=function(type,id=''){if(!id){parent.GestorCerca.openMembers();return;}editLinkedRecord(type,id);const f=$('#record-form');f.elements.name.readOnly=true;for(const k of ['phone','ministry'])f.elements[k].readOnly=true;f.elements.familyId.disabled=true;$('#editor-title').textContent='Ubicación y coordinación · '+find(id).name;let note=f.querySelector('.registry-source-note');if(!note){note=document.createElement('p');note.className='registry-source-note banner';f.prepend(note);}note.textContent='Nombre, teléfono, ministerio y familia provienen de Miembros. Aquí se guarda la ubicación para organizar visitas y traslados.';};
 const saveLinkedRecord=$('#record-form').onsubmit;
 $('#record-form').onsubmit=function(e){const f=e.target,old=find(f.elements.id.value),family=old?.familyId||'';f.elements.familyId.disabled=false;saveLinkedRecord(e);f.elements.familyId.disabled=true;if(old&&find(old.id))find(old.id).familyId=family;};
 const renderLinked=render;
-render=function(){renderLinked();$('#add-family').textContent='Administrar miembros';$('#add-person').hidden=true;$('#mode-banner').textContent='Padrón del Gestor · Ubicaciones y organización compartidas en Firebase. Consultá el estado de sincronización arriba.';$('.side-bottom').textContent='Integrado con Gestor IMPA · Alto Valle';$$('[data-delete]').forEach(b=>b.hidden=true);};
+render=function(){renderLinked();$('#add-family').textContent='Administrar miembros';$('#add-person').hidden=true;$('#mode-banner').textContent='Personas y familias de Miembros · El mapa agrega ubicaciones, visitas y traslados. Las altas y los vínculos se administran en Miembros.';$('.side-bottom').textContent='Integrado con Gestor IMPA · Alto Valle';$$('[data-delete]').forEach(b=>b.hidden=true);};
 const renderLinkedConfig=renderConfig;
 renderConfig=function(){renderLinkedConfig();$('#restore').hidden=true;$('#restore-file').disabled=true;$('#backup').parentElement.parentElement.querySelector('p').textContent='Respaldo del mapa. El padrón se administra desde Miembros del Gestor. Consultá el estado de Firebase en la barra superior.';const notes=$('#backup').parentElement.parentElement.querySelectorAll('p');if(notes.length>1)notes[notes.length-1].textContent='La importación de padrones independientes está deshabilitada para evitar duplicados.';$('#key-form').onsubmit=e=>{e.preventDefault();apiKey=$('#maps-key').value.trim();localStorage.setItem('gestor-impa-google-key',apiKey);parent.GestorCerca.refresh();};};
 view='mapa';render();
