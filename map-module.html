@@ -971,6 +971,12 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
 @media(max-width:1100px){#vista-peticiones .peticiones-app>div>.grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#vista-peticiones .peticiones-app>div>.grid>.space-y-6:last-child>section{grid-column:1/-1}}
 @media(max-width:767px){body>main{padding:8px 8px 18px!important}#vista-peticiones .peticiones-app>div>.grid{grid-template-columns:1fr!important}}
 }
+@media screen {
+#petition-active-panel{display:flex!important;flex-direction:column;box-sizing:border-box;min-height:0;overflow:hidden!important}
+#petition-active-panel>div:first-child{flex:0 0 auto}
+#petition-active-list{flex:1 1 auto;min-height:0;max-height:none!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--ui-muted) var(--ui-soft)}
+@media(max-width:767px){#petition-active-panel{height:auto!important}#petition-active-list{overflow:visible!important;flex:none}}
+}
 </style><style>@media screen {
 :root{--ink:var(--ui-ink);--muted:var(--ui-muted);--green:var(--ui-green);--line:var(--ui-line);--paper:var(--ui-bg);--nav:var(--ui-panel);--gold:var(--ui-gold)}
 body{font:15px/1.55 var(--ui-font)!important;background:var(--ui-bg)!important;color:var(--ui-ink)!important}
