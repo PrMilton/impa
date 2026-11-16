@@ -3800,7 +3800,7 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
         // Modales y WhatsApp omitidos temporalmente o resumidos para espacio (Los implemento todos)
         let confDayCode = "";
         window.openDayConfig = function(code) { 
-            confDayCode = code; const dKey = currentWeekDateKeys[code];
+            confDayCode = code; const dKey = arguments[1] || currentWeekDateKeys[code]; document.getElementById("day-config-modal").dataset.eventBase = dKey;
             const names = {'mar_mie':'Mar y Mié', 'jue':'Jueves', 'vie':'Viernes', 'sab':'Sábado', 'dom':'Domingo'};
             document.getElementById('day-config-title').textContent = `Configurar: ${names[code]}`;
             document.getElementById('day-event-select').value = assignments[`${dKey}_event_type`] || "";
@@ -3818,7 +3818,7 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
         };
         window.closeDayConfig = () => document.getElementById('day-config-modal').classList.add('hidden');
         window.saveDayConfig = function() {
-            const dKey = currentWeekDateKeys[confDayCode];
+            const dKey = document.getElementById("day-config-modal").dataset.eventBase || currentWeekDateKeys[confDayCode];
             const ev = document.getElementById('day-event-select').value;
             const cTxt = document.getElementById('day-custom-textarea').value.trim();
             const iTxt = document.getElementById('day-internal-textarea').value.trim();
@@ -6022,6 +6022,41 @@ ritualRoot.render(<LibroPastoralApp />);
  const resize=new ResizeObserver(sync);
  function bind(){const next=root.querySelector('#petition-new-panel'),active=root.querySelector('#petition-active-panel');if(next!==form||active!==panel){resize.disconnect();form=next;panel=active;if(form)resize.observe(form);}sync();}
  new MutationObserver(bind).observe(root,{childList:true,subtree:true});desktop.addEventListener('change',sync);bind();
+})();
+</script><script>(()=>{
+ const fields=['type','name','time','place','dates','text','internal'];
+ function refresh(){renderCalendar();renderWeek();saveToCloud();}
+ window.editUpcomingEvent=base=>{
+  selectedDate=new Date(base+'T12:00:00');currentDate=new Date(selectedDate);renderCalendar();renderWeek();
+  const code=Object.keys(currentWeekDateKeys).find(k=>currentWeekDateKeys[k]===base)||({0:'dom',2:'mar_mie',3:'mar_mie',4:'jue',5:'vie',6:'sab'})[selectedDate.getDay()]||'mar_mie';
+  openDayConfig(code,base);
+  document.getElementById('day-config-title').textContent='Editar evento · '+selectedDate.toLocaleDateString('es-AR');
+ };
+ window.deleteUpcomingEvent=base=>{
+  if(!assignments[base+'_event_type'])return;
+  const name=assignments[base+'_event_name']||eventStyles[assignments[base+'_event_type']]?.name||'Evento';
+  if(!confirm('¿Eliminar “'+name+'” de la agenda? Se quitarán todas sus fechas. Las asignaciones habituales se conservan. Podés restaurarlo desde Próximos eventos.'))return;
+  const saved={};for(const field of fields){const key=base+'_event_'+field;if(Object.hasOwn(assignments,key)){saved[key]=assignments[key];delete assignments[key];}}
+  appData.eventTrash??=[];appData.eventTrash.push({base,name,saved,at:new Date().toISOString()});refresh();showToast('Evento eliminado. Podés restaurarlo.','success');
+ };
+ window.restoreUpcomingEvent=()=>{
+  const item=appData.eventTrash?.at(-1);if(!item)return;
+  if(fields.some(field=>Object.hasOwn(assignments,item.base+'_event_'+field))){showToast('Esa fecha tiene otra configuración. No se reemplazó.','error');return;}
+  Object.assign(assignments,item.saved);appData.eventTrash.pop();refresh();showToast('Evento restaurado.','success');
+ };
+ const original=renderUpcomingEvents;
+ renderUpcomingEvents=function(){
+  original();const host=document.getElementById('upcoming-events');if(!host)return;
+  const events=scheduledEvents().filter(e=>e.date>=formatDateKey(new Date()));
+  [...host.querySelectorAll('.agenda-event')].forEach((card,index)=>{
+   const event=events[index];if(!event)return;
+   const wrap=document.createElement('div');card.before(wrap);wrap.append(card);
+   const actions=document.createElement('div');actions.className='flex gap-2 mb-3 mt-1 no-print';
+   for(const [label,fn] of [['Editar',editUpcomingEvent],['Eliminar',deleteUpcomingEvent]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.className='px-3 py-1 rounded-lg border text-sm font-bold';b.setAttribute('aria-label',label+' evento '+event.name);b.onclick=()=>fn(event.base);actions.append(b);}wrap.append(actions);
+  });
+  const last=appData.eventTrash?.at(-1);if(last){const b=document.createElement('button');b.type='button';b.textContent='Restaurar último eliminado: '+last.name;b.className='p-2 rounded-lg border text-sm no-print';b.onclick=restoreUpcomingEvent;host.append(b);}
+ };
+ renderUpcomingEvents();
 })();
 </script><script>(function(root){
  const clone=x=>JSON.parse(JSON.stringify(x));
