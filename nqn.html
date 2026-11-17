@@ -5971,7 +5971,7 @@ ritualRoot.render(<LibroPastoralApp />);
   const address=point.lat!==null?member.address||'':query||member.address||'';
   return {address,city:cityFromAddress(address)||cityFromAddress(member.address),...point};
  }
- function locationExtras(raw={}){return Object.fromEntries(['address','city','lat','lng','neighborhood','availability','mobility','notes','ownAddress','sourceAddress','sourceMapLocation'].filter(k=>Object.hasOwn(raw,k)).map(k=>[k,raw[k]]));}
+ function locationExtras(raw={}){return Object.fromEntries(['address','city','lat','lng','neighborhood','availability','mobility','notes','ownAddress','sourceAddress','sourceMapLocation','addressSourceId'].filter(k=>Object.hasOwn(raw,k)).map(k=>[k,raw[k]]));}
  function projectedData(){
   const redirects=appData.memberRedirects||{},resolve=id=>{const seen=new Set();while(redirects[id]&&!seen.has(id)){seen.add(id);id=redirects[id];}return id;};
   const walk=x=>typeof x==='string'?(redirects[x]?resolve(x):x):Array.isArray(x)?x.map(walk):x&&typeof x==='object'?Object.fromEntries(Object.entries(x).map(([k,v])=>[k,walk(v)])):x;
@@ -5991,9 +5991,9 @@ ritualRoot.render(<LibroPastoralApp />);
   const families=familyGroups().map(g=>{
    const id='household:'+g.key,extra=locationExtras(projected.locations[id]);
    const parents=g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='hijo/a'&&r.sharesHousehold!==false&&g.members.some(c=>c.id===r.personId))||g.members.some(c=>(c.relationships||[]).some(r=>r.personId===m.id&&['madre','padre','padre/madre'].includes(r.type)&&r.sharesHousehold!==false)));
-   const candidates=(parents.length?parents:g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='cónyuge'&&r.sharesHousehold!==false))).map(m=>people.find(p=>p.id===m.id)).filter(p=>p&&(p.address||p.lat!==null)).sort((a,b)=>a.id.localeCompare(b.id));
+   const candidates=(parents.length?parents:g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='cónyuge'&&r.sharesHousehold!==false))).map(m=>people.find(p=>p.id===m.id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.address||b.lat!==null))-Number(Boolean(a.address||a.lat!==null))||a.id.localeCompare(b.id));
    const source=candidates[0];
-   return {id,type:'family',name:g.name,city:'',address:'',lat:null,lng:null,phone:'',ministry:g.members.some(m=>m.hierarchy==='pastores')?'Pastores':'',familyId:'',ownAddress:true,...extra,...(source?{address:source.address,city:source.city,lat:source.lat,lng:source.lng,addressSourceId:source.id,addressSourceName:source.name}:{})};
+   return {id,type:'family',name:g.name,city:'',address:'',lat:null,lng:null,phone:'',ministry:g.members.some(m=>m.hierarchy==='pastores')?'Pastores':'',familyId:'',ownAddress:true,...extra,...(source?{address:source.address,city:source.city,lat:source.lat,lng:source.lng,addressSourceId:source.id,addressSourceName:source.name}:extra.addressSourceId?{address:'',city:'',lat:null,lng:null,addressSourceId:''}:{})};
   });
   return [...families,...people];
  }
@@ -6001,7 +6001,7 @@ ritualRoot.render(<LibroPastoralApp />);
   getState(){const records=registry(),projected=projectedData();return {...projected,records,commissions:[...(projected.commissions||[]).filter(g=>!g.source),...CongregationModel.teams(appData,records,projected.personnelLinks||{})]};},
   save(next){try{next=copy(next);const current=registry();
     for(const family of next.records.filter(r=>r.type==='family')){const before=current.find(r=>r.id===family.id),source=next.records.find(r=>r.id===before?.addressSourceId);if(source&&['address','city','lat','lng'].some(k=>family[k]!==before[k]))for(const k of ['address','city','lat','lng'])source[k]=family[k];}
-    const locations={};const allowed=new Set(current.map(r=>r.id));for(const r of next.records){if(!allowed.has(r.id))continue;locations[r.id]=Object.fromEntries(['address','city','lat','lng','neighborhood','availability','mobility','notes','ownAddress'].map(k=>[k,r[k]??(['lat','lng'].includes(k)?null:k==='ownAddress'?true:'')]));const member=membersRegistry.find(m=>m.id===r.id);if(member){locations[r.id].sourceAddress=member.address||'';locations[r.id].sourceMapLocation=member.mapLocation||'';}}
+    const locations={};const allowed=new Set(current.map(r=>r.id));for(const r of next.records){if(!allowed.has(r.id))continue;locations[r.id]=Object.fromEntries(['address','city','lat','lng','neighborhood','availability','mobility','notes','ownAddress'].map(k=>[k,r[k]??(['lat','lng'].includes(k)?null:k==='ownAddress'?true:'')]));if(r.type==='family'&&r.addressSourceId)locations[r.id].addressSourceId=r.addressSourceId;const member=membersRegistry.find(m=>m.id===r.id);if(member){locations[r.id].sourceAddress=member.address||'';locations[r.id].sourceMapLocation=member.mapLocation||'';}}
     const previous=data;data=valid({version:1,personnelLinks:copy(data.personnelLinks||{}),locations,temple:copy(next.temple),tasks:copy(next.tasks),commissions:copy((next.commissions||[]).filter(g=>!g.source)),transportPlans:copy(next.transportPlans||[])});const wasPending=pending;pending=true;try{persist();}catch(e){data=previous;pending=wasPending;throw e;}revision++;status('Guardado local · pendiente de Firebase');void push();return true;
    }catch{status('No se pudo guardar el mapa. Descargá un respaldo.');return false;}},
   openMembers(id){switchTab('miembros');if(id&&membersRegistry.some(m=>m.id===id))editMember(id);},
