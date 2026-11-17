@@ -2994,10 +2994,18 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
                 documentType: document.getElementById('member-document-type').value,
                 documentNumber: document.getElementById('member-document-number').dataset.privateSurveyDni ? (previous.documentNumber || '') : document.getElementById('member-document-number').value.trim(),
                 joinDate: document.getElementById('member-join-date').value,
+joinStatus: document.getElementById('member-join-status').value,
+joinPrecision: document.getElementById('member-join-precision').value,
                 baptismDate: document.getElementById('member-baptism-date').value,
+baptismStatus: document.getElementById('member-baptism-status').value,
+baptismPrecision: document.getElementById('member-baptism-precision').value,
                 baptismPlace: titleCaseWords(document.getElementById('member-baptism-place').value.trim()),
                 probationDate: document.getElementById('member-probation-date').value,
+probationStatus: document.getElementById('member-probation-status').value,
+probationPrecision: document.getElementById('member-probation-precision').value,
                 communionDate: document.getElementById('member-communion-date').value,
+communionStatus: document.getElementById('member-communion-status').value,
+communionPrecision: document.getElementById('member-communion-precision').value,
                 familyName: titleCaseWords(document.getElementById('member-family-name').value.trim()),
                 notes: document.getElementById('member-notes').value.trim(),
                 exitDate: document.getElementById('member-exit-date').value,
@@ -3304,10 +3312,10 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
                     ${(member.mapLocation || member.address) ? `<div class="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 p-3"><div class="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700 dark:text-emerald-300 mb-2"><i class="fas fa-map-location-dot mr-1"></i>Ubicación</div><a href="${escapeMemberHtml(memberMapUrl(member))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300 hover:underline">Abrir en Google Maps <i class="fas fa-arrow-up-right-from-square"></i></a></div>` : ''}
                     ${detailValue('Documento', [member.documentType, member.documentNumber].filter(Boolean).join(' '), 'fa-id-card')}
                     ${detailValue('Grupo familiar', member.familyName, 'fa-people-roof')}
-                    ${detailValue('Ingreso', member.joinDate, 'fa-door-open')}
-                    ${detailValue('Bautismo', [member.baptismDate, member.baptismPlace].filter(Boolean).join(' · '), 'fa-water')}
-                    ${detailValue('Llamado a Probando', member.probationDate, 'fa-hands-praying')}
-                    ${detailValue('Plena comunión', member.communionDate, 'fa-church')}
+                    ${detailValue('Ingreso', MemberDates.describe(MemberDates.current(member,'joinEvent')), 'fa-door-open')}
+                    ${detailValue('Bautismo', [MemberDates.describe(MemberDates.current(member,'baptismEvent')), member.baptismPlace].filter(Boolean).join(' · '), 'fa-water')}
+                    ${detailValue('Llamado a Probando', MemberDates.describe(MemberDates.current(member,'probationEvent')), 'fa-hands-praying')}
+                    ${detailValue('Plena comunión', MemberDates.describe(MemberDates.current(member,'communionEvent')), 'fa-church')}
                     ${detailValue('Fecha de baja', member.exitDate, 'fa-calendar-xmark')}
                     ${detailValue('Causa de baja', member.exitCause, 'fa-circle-minus')}
                 </div>
@@ -6155,6 +6163,17 @@ ritualRoot.render(<LibroPastoralApp />);
  for(const [label,fn] of [['Revisar duplicados',reviewMemberDuplicates],['Papelera',openMemberTrash]]){const b=document.createElement('button');b.textContent=label;b.className='px-4 py-2.5 rounded-xl bg-blue-700 text-white font-bold';b.onclick=fn;bar?.append(b);}
  const b=document.createElement('button');b.type='button';b.textContent='Eliminar ficha';b.style.cssText='color:var(--ui-red);margin:10px';b.onclick=()=>{const id=document.getElementById('member-id').value;if(id)removeMember(id);else showToast('Primero elegí una ficha para editar.','error');};document.getElementById('member-form').append(b);
 })();
+</script><script>(function(root){
+ const keys=['join','baptism','probation','communion'];
+ const labels={joinEvent:'Ingreso',baptismEvent:'Bautismo',probationEvent:'Miembro probando',communionEvent:'Plena comunión'};
+ function precision(date){return /^\d{4}$/.test(date||'')?'year':/^\d{4}-\d{2}$/.test(date||'')?'month':date?'exact':'unknown';}
+ function current(member,field){if(!member)return '';if(!field.endsWith('Event'))return member[field];const k=field.slice(0,-5);if(!member[k+'Status']&&!member[k+'Precision']&&!member[k+'Date'])return '';return {event:k,status:member[k+'Status']||(member[k+'Date']?'yes':''),precision:member[k+'Precision']||precision(member[k+'Date']),date:member[k+'Date']||''};}
+ function group(proposed){const result={...proposed};for(const k of keys){if(![k+'Status',k+'Precision',k+'Date'].some(f=>Object.hasOwn(proposed,f)))continue;result[k+'Event']=current(proposed,k+'Event');for(const suffix of ['Status','Precision','Date'])delete result[k+suffix];}return result;}
+ function isEmpty(member,field){if(!member)return true;if(field.endsWith('Event')){const k=field.slice(0,-5);return !member[k+'Date']&&!member[k+'Status']&&!member[k+'Precision'];}return member[field]===undefined||member[field]==='';}
+ function describe(value){if(value&&typeof value==='object'&&value.event){const date=value.date?(value.precision==='year'?'Solo año: ':value.precision==='month'?'Mes y año: ':'Fecha: ')+value.date:'Fecha no recordada / pendiente';return value.event==='join'?date:value.status==='yes'?'Sí — '+date:value.status==='no'?'No':value.status==='unknown'?'No sabe / pendiente':'Sin completar';}return typeof value==='boolean'?(value?'Sí':'No'):value||'Sin completar';}
+ function apply(member,field,value){if(!field.endsWith('Event')){member[field]=value;return;}const k=value.event;member[k+'Status']=k==='join'?'':value.status;member[k+'Precision']=k==='join'||value.status==='yes'?value.precision:'';member[k+'Date']=k==='join'||value.status==='yes'?value.date:'';}
+ const api={keys,labels,precision,current,group,isEmpty,describe,apply};root.MemberDates=api;if(typeof module!=='undefined')module.exports=api;
+})(globalThis);
 </script><script>window.IMPA_SURVEY_CONFIG = {
   enabled: true,
   firebase: {apiKey:'AIzaSyBPNi8h-XNpwyISUoaDe5tjf4SjL0Z3I1o',authDomain:'cartelera-pastoral-neuqu-cf1dd.firebaseapp.com',projectId:'cartelera-pastoral-neuqu-cf1dd',appId:'1:117860342876:web:e14d816a7fe1ed15d85a99'},
@@ -6210,7 +6229,11 @@ ritualRoot.render(<LibroPastoralApp />);
   return 'Actualización de ficha — IMPA Neuquén\n\n'+lines.join('\n')+'\n\nAutorizo el uso de estos datos para actualizar la ficha y organizar el acompañamiento de la congregación.';
  }
  function proposed(data){const p={name:data.name,birthDate:data.birthDate,phone:data.phone,address:data.address?[data.address,data.city==='Otra localidad'?data.otherCity:data.city].filter(Boolean).join(', '):''};
-  for(const key of Object.keys(eventLabels))if(data[key+'Precision']==='exact'&&data[key+'Date'])p[key+'Date']=data[key+'Date'];
+  for(const key of Object.keys(eventLabels)){
+   const status=data[key+'Status'],precision=data[key+'Precision'];
+   if(key!=='join'&&status)p[key+'Status']=status;
+   if(precision){p[key+'Precision']=precision;p[key+'Date']=precision==='exact'?data[key+'Date']||'':precision==='year'?data[key+'Year']||'':'';}
+  }
   if(data.baptismStatus==='yes'&&data.baptismPlace&&!/no recuerdo|no s[eé]/i.test(data.baptismPlace))p.baptismPlace=data.baptismPlace;
   if(data.minor)p.under14=data.minor==='yes';return p;
  }
@@ -6247,25 +6270,25 @@ ritualRoot.render(<LibroPastoralApp />);
   let loadVersion=0;
   async function load(state){const version=++loadVersion;try{status.textContent='Conectando…';user=await SurveyService.login();const rows=await SurveyService.list(state);if(version!==loadVersion||!d.isConnected)return;status.textContent='Sesión: '+user.email+' · '+rows.length+' respuestas '+({pending:'pendientes',reviewed:'revisadas',dismissed:'archivadas'})[state]+' (hasta 100 por carga).';d.querySelector('[data-responses]')?.remove();const list=node('section');list.dataset.responses='';
    for(const item of rows){const row=node('div');row.style.cssText='padding:14px;border-bottom:1px solid var(--ui-line);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap';const actions=node('div');actions.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
-    actions.append(button(state==='pending'?'Revisar ficha':'Ver respuesta',()=>{if(state==='pending')review(item);else{const history=shell();history.append(node('h3',item.data.name));const text=node('pre',SurveyModel.message(item.data));text.style.cssText='white-space:pre-wrap;font:inherit';history.append(text,button('Volver',()=>show(state)));}}));
+    actions.append(button(state==='pending'?'Revisar ficha':'Ver respuesta',()=>{if(state==='pending')review(item);else{const history=shell();history.append(node('h3',item.data.name));const text=node('pre',SurveyModel.message(item.data));text.style.cssText='white-space:pre-wrap;font:inherit';history.append(text,button('Incorporar o corregir datos en Miembros',()=>review(item)),button('Volver',()=>show(state)));}}));
     const archive=button(state==='dismissed'?'Restaurar a pendientes':'Archivar respuesta',async()=>{archive.disabled=true;try{await SurveyService.finish(item.id,state==='dismissed'?'pending':'dismissed',item.memberId||'');await load(state);}catch(e){status.textContent=message(e);archive.disabled=false;}});actions.append(archive);row.append(node('span',item.data.name),actions);list.append(row);
    }if(!rows.length)list.append(node('p','No hay respuestas en esta lista.'));d.append(list);
   }catch(e){if(version===loadVersion)status.textContent=message(e);}}
   d.append(node('p','Pendientes muestra solo las respuestas por resolver. Archivar las quita de esa lista sin cambiar Miembros; podés recuperarlas en Archivadas.'),button(user?'Actualizar pendientes':'Ingresar con Google para revisar',()=>load('pending')),button('Ver respuestas revisadas',()=>load('reviewed')),button('Ver archivadas',()=>load('dismissed')),button('Cerrar sesión',async()=>{try{++loadVersion;await SurveyService.logout();user=null;show();}catch(e){status.textContent=message(e);}}));
   if(user)await load(typeof initialState==='string'?initialState:'pending');
  }
- function review(item){const d=shell();const data=SurveyModel.clean(item.data);d.append(node('h3',data.name),node('p','Compará la respuesta con el padrón. Ningún dato se reemplaza sin elegirlo. Podés incorporar las fechas exactas y el lugar del bautismo. Los años sin día y mes permanecen en la respuesta privada; no se inventan fechas. El DNI se conserva de forma privada y se consulta desde la ficha del miembro después de vincular y revisar la respuesta. Los vínculos y la categoría se revisan manualmente.'));
+ function review(item){const d=shell();const data=SurveyModel.clean(item.data);d.append(node('h3',data.name),node('p','Compará la respuesta con el padrón. Ningún dato se reemplaza sin elegirlo. Podés incorporar las fechas exactas y el lugar del bautismo. También se incorporan solo años y confirmaciones sin fecha, sin inventar día ni mes. El DNI se conserva de forma privada y se consulta desde la ficha del miembro después de vincular y revisar la respuesta. Los vínculos y la categoría se revisan manualmente.'));
   const possible=SurveyModel.matches(data,membersRegistry);for(const p of possible)d.append(node('p',p.reason+': '+p.member.name));
   const label=node('label','Vincular con una ficha existente o crear una nueva');const select=node('select');select.style.cssText='width:100%;padding:12px;margin:12px 0';select.add(new Option('Elegí una ficha…',''));select.add(new Option('Crear un nuevo miembro','new'));[...membersRegistry].sort((a,b)=>a.name.localeCompare(b.name,'es')).forEach(m=>select.add(new Option(m.name,m.id)));label.append(select);d.append(label);
   const detail=node('div');const notice=node('p');notice.setAttribute('role','status');const choices=[];
   select.onchange=()=>{detail.replaceChildren();choices.length=0;const current=membersRegistry.find(m=>m.id===select.value);if(!select.value)return;
-   const proposed=SurveyModel.proposed(data);
-   for(const [field,value] of Object.entries(proposed)){if(value===''||value===undefined)continue;const row=node('label');row.style.cssText='display:block;border:1px solid var(--ui-line);padding:12px;margin:10px 0;border-radius:8px';const cb=node('input');cb.type='checkbox';cb.checked=!current||current[field]===undefined||current[field]==='';choices.push({field,value,cb});row.append(cb,document.createTextNode(' '+({name:'Nombre',birthDate:'Nacimiento',phone:'Teléfono',address:'Dirección',joinDate:'Ingreso',baptismDate:'Fecha de bautismo',baptismPlace:'Iglesia y localidad del bautismo',probationDate:'Miembro probando',communionDate:'Plena comunión',under14:'Menor de 14 años'})[field]+': '+(typeof value==='boolean'?(value?'Sí':'No'):value)),node('p','Actual: '+(typeof current?.[field]==='boolean'?(current[field]?'Sí':'No'):(current?.[field]||'Sin completar'))));detail.append(row);}
+   const proposed=MemberDates.group(SurveyModel.proposed(data));
+   for(const [field,value] of Object.entries(proposed)){if(value===''||value===undefined)continue;const row=node('label');row.style.cssText='display:block;border:1px solid var(--ui-line);padding:12px;margin:10px 0;border-radius:8px';const cb=node('input');cb.type='checkbox';cb.checked=MemberDates.isEmpty(current,field);choices.push({field,value,cb});row.append(cb,document.createTextNode(' '+({...MemberDates.labels,name:'Nombre',birthDate:'Nacimiento',phone:'Teléfono',address:'Dirección',joinDate:'Ingreso',baptismDate:'Fecha de bautismo',baptismPlace:'Iglesia y localidad del bautismo',probationDate:'Miembro probando',communionDate:'Plena comunión',under14:'Menor de 14 años'})[field]+': '+MemberDates.describe(value)),node('p','Actual: '+MemberDates.describe(MemberDates.current(current,field))));detail.append(row);}
    detail.append(node('h3','Información para revisar'),node('pre',SurveyModel.message(data)));const pre=detail.querySelector('pre');pre.style.cssText='white-space:pre-wrap;font:inherit';
-  };d.append(detail,notice);
+  };d.append(detail,notice);if(item.memberId&&membersRegistry.some(m=>m.id===item.memberId)){select.value=item.memberId;select.onchange();}
   let completing=false;const apply=button('Guardar selección en Miembros',async()=>{if(completing)return;if(!select.value){notice.textContent='Elegí una ficha o la opción Crear un nuevo miembro.';return;}if(select.value==='new'&&possible.length&&!confirm('Hay coincidencias en el padrón. ¿Confirmás que es otra persona y querés crear una ficha nueva?'))return;completing=true;apply.disabled=true;try{
-   const prior=appData.surveyImports?.[item.id];let member=prior?membersRegistry.find(m=>m.id===prior):membersRegistry.find(m=>m.id===select.value);
-   if(!prior){if(select.value!=='new'&&!member)throw Error('Ficha no disponible');if(!member){member={id:createPersonId(),name:data.name,status:'activo',hierarchy:'congregacion',hierarchyMode:'manual',membershipCategory:'',relationships:[],createdAt:Date.now(),source:'encuesta'};membersRegistry.push(member);}for(const c of choices)if(c.cb.checked){if(c.field==='address'&&member.address!==c.value)member.mapLocation='';member[c.field]=c.value;}member.updatedAt=Date.now();appData.surveyImports={...(appData.surveyImports||{}),[item.id]:member.id};}
+   const prior=appData.surveyImports?.[item.id];let member=membersRegistry.find(m=>m.id===(select.value==='new'&&prior?prior:select.value));
+   if(select.value!=='new'&&!member)throw Error('Ficha no disponible');if(!member){member={id:createPersonId(),name:data.name,status:'activo',hierarchy:'congregacion',hierarchyMode:'manual',membershipCategory:'',relationships:[],createdAt:Date.now(),source:'encuesta'};membersRegistry.push(member);}for(const c of choices)if(c.cb.checked){if(c.field==='address'&&member.address!==c.value)member.mapLocation='';MemberDates.apply(member,c.field,c.value);}member.updatedAt=Date.now();appData.surveyImports={...(appData.surveyImports||{}),[item.id]:member.id};
    notice.textContent='Guardando en el padrón…';ensureRegistryLinks();syncPersonalToCartelera(false);clearTimeout(syncTimeout);const saved=await performCloudSave();if(!saved){notice.textContent='No se pudo confirmar el guardado del padrón. La respuesta sigue pendiente. Reintentá sin cerrar esta ventana.';return;}
    await SurveyService.finish(item.id,'reviewed',member.id);renderMembersRegistry();renderDashboard();renderWeek();notice.textContent='Ficha guardada y respuesta revisada. Ya no aparece en pendientes.';apply.hidden=true;reviewOnly.hidden=true;archiveOnly.hidden=true;d.append(button('Abrir ficha del miembro',()=>{d.close();switchTab('miembros');editMember(member.id);}),button('Volver a pendientes',show));
   }catch(e){notice.textContent=message(e)+' La respuesta sigue pendiente.';}finally{completing=false;apply.disabled=false;}});
@@ -6315,6 +6338,27 @@ ritualRoot.render(<LibroPastoralApp />);
  const preview=window.previewMemberMap;window.previewMemberMap=function(){const p=inherited();if(!p)return preview.apply(this,arguments);const value=p.lat!=null&&p.lng!=null?p.lat+','+p.lng:p.address;window.open(memberMapUrl(value,''),'_blank','noopener,noreferrer');};
  for(const field of [address,location,$('member-family-name')])field.addEventListener('input',update);
  update();
+})();
+</script><script>(()=>{
+ const $=id=>document.getElementById(id),controls={};
+ for(const k of MemberDates.keys){
+  const field=$('member-'+k+'-date'),label=MemberDates.labels[k+'Event'];
+  field.setAttribute('aria-label',label+' · fecha o año');
+  const status=document.createElement('select');status.id='member-'+k+'-status';status.className='member-input';status.setAttribute('aria-label',label+' · confirmación');
+  for(const [value,text] of [['','Sin responder'],['yes','Sí'],['no','No'],['unknown','No sabe']])status.add(new Option(text,value));
+  const precision=document.createElement('select');precision.id='member-'+k+'-precision';precision.className='member-input';precision.setAttribute('aria-label',label+' · precisión de fecha');
+  for(const [value,text] of [['','Sin responder'],['exact','Fecha exacta'],['year','Solo año'],['month','Mes y año'],['unknown','Fecha desconocida']])precision.add(new Option(text,value));
+  if(k!=='join')field.before(status);else{status.hidden=true;field.before(status);}field.before(precision);
+  function configure(value){const p=precision.value;field.type=p==='exact'?'date':p==='month'?'month':p==='year'?'number':'text';field.hidden=!p||p==='unknown'||k!=='join'&&status.value!=='yes';field.disabled=field.hidden;field.required=!field.hidden;field.min=p==='year'?'1900':p==='month'?'1900-01':'1900-01-01';field.max=p==='year'?String(new Date().getFullYear()):p==='month'?new Date().toISOString().slice(0,7):new Date().toISOString().slice(0,10);field.placeholder='Ej.: 1990';field.value=field.hidden?'':value||'';precision.disabled=k!=='join'&&status.value!=='yes';}
+  precision.onchange=()=>{const old=field.value;configure(precision.value==='year'?old.slice(0,4):precision.value==='month'&&old.length>=7?old.slice(0,7):precision.value==='exact'&&old.length===10?old:'');};
+  status.onchange=()=>{if(status.value==='yes'&&!precision.value)precision.value='unknown';if(status.value!=='yes')precision.value='';configure(field.value);};
+  controls[k]={field,status,precision,configure};
+ }
+ function prepare(){for(const c of Object.values(controls)){c.field.type='text';c.field.disabled=false;c.field.required=false;}}
+ function load(){const member=membersRegistry.find(m=>m.id===$('member-id').value)||{};for(const k of MemberDates.keys){const c=controls[k];c.status.value=member[k+'Status']||(member[k+'Date']?'yes':'');c.precision.value=member[k+'Precision']||(member[k+'Date']?MemberDates.precision(member[k+'Date']):c.status.value==='yes'?'unknown':'');c.configure(member[k+'Date']);}}
+ const edit=window.editMember;window.editMember=function(){prepare();const result=edit.apply(this,arguments);load();return result;};
+ const fresh=window.newMemberForm;window.newMemberForm=function(){prepare();const result=fresh.apply(this,arguments);load();return result;};
+ load();
 })();
 </script><script>(()=>{
  const $=id=>document.getElementById(id),form=$('member-form'),card=$('member-form-card');if(!form||!card)return;
