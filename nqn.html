@@ -3040,7 +3040,7 @@ communionPrecision: document.getElementById('member-communion-precision').value,
                         id:relatedId, name:titleCaseWords(draft.name), birthDate:draft.birthDate || '', status:'activo',
                         membershipCategory:'', hierarchy:'congregacion', hierarchyMode:'manual',
                         under14:Boolean(draft.under14 || (draft.birthDate && calculateMemberAge(draft.birthDate) < 14)),
-                        phone:'', address:draft.sharesHousehold ? member.address : '', mapLocation:draft.sharesHousehold ? member.mapLocation : '', documentType:'DNI', documentNumber:'',
+                        phone:'', address:'', mapLocation:'', documentType:'DNI', documentNumber:'',
                         joinDate:'', baptismDate:'', baptismPlace:'', probationDate:'', communionDate:'',
                         familyName:draft.sharesHousehold ? member.familyName : '', notes:'', exitDate:'', exitCause:'',
                         relationships:[], createdAt:Date.now(), source:'family'
@@ -3351,7 +3351,7 @@ communionPrecision: document.getElementById('member-communion-precision').value,
 
         window.exportMembersExcel = function() {
             if (!window.XLSX) { showToast('No se pudo cargar el exportador Excel', 'error'); return; }
-            const rows = [...membersRegistry].sort((a,b) => a.name.localeCompare(b.name, 'es')).map((member, index) => ({
+            const rows = membersRegistry.map(memberEffectiveLocation).sort((a,b) => a.name.localeCompare(b.name, 'es')).map((member, index) => ({
                 'Nº': index + 1, 'Nombre': member.name, 'Nacimiento': member.birthDate || '', 'Edad': calculateMemberAge(member.birthDate),
                 'Teléfono': member.phone || '', 'Teléfonos alternativos': (member.alternatePhones || []).join(' · '), 'Domicilio': member.address || '', 'Ubicación Maps': member.mapLocation || '', 'Tipo Doc.': member.documentType || '', 'Documento': member.documentNumber || '',
                 'Ingreso': member.joinDate || '', 'Bautismo': member.baptismDate || '', 'Lugar bautismo': member.baptismPlace || '',
@@ -6004,8 +6004,8 @@ ritualRoot.render(<LibroPastoralApp />);
   }
   return member.under14===true;
  }
- function registry(){const projected=projectedData();
-  const people=membersRegistry.filter(m=>!isMapMinor(m)).map(m=>{const familyId=m.familyName?'household:'+normalizePersonName(m.familyName):'',source=memberLocation(m);let extra=locationExtras(projected.locations[m.id]);
+ function registry(includeMinors=false){const projected=projectedData();
+  const people=membersRegistry.filter(m=>includeMinors||!isMapMinor(m)).map(m=>{const familyId=m.familyName?'household:'+normalizePersonName(m.familyName):'',source=memberLocation(m);let extra=locationExtras(projected.locations[m.id]);
    if(extra.ownAddress===false){for(const k of ['address','city','lat','lng','addressSourceId'])delete extra[k];extra.ownAddress=true;}
    const changed=(extra.sourceAddress!==undefined&&extra.sourceAddress!==(m.address||''))||(extra.sourceMapLocation!==undefined&&extra.sourceMapLocation!==(m.mapLocation||''));
    // Older map copies have no source stamps; never let their empty fields hide member data.
@@ -6021,7 +6021,7 @@ ritualRoot.render(<LibroPastoralApp />);
    const parents=g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='hijo/a'&&r.sharesHousehold!==false&&g.members.some(c=>c.id===r.personId))||g.members.some(c=>(c.relationships||[]).some(r=>r.personId===m.id&&['madre','padre','padre/madre'].includes(r.type)&&r.sharesHousehold!==false)));
    const spouses=g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='cónyuge'&&r.sharesHousehold!==false));
    const rank=m=>parents.includes(m)?0:spouses.includes(m)?1:2;
-   const candidates=g.members.map(m=>({m,p:people.find(p=>p.id===m.id)})).filter(x=>x.p&&(x.p.address||x.p.lat!=null&&x.p.lng!=null)).sort((a,b)=>rank(a.m)-rank(b.m)||Number(b.m.id===extra.addressSourceId)-Number(a.m.id===extra.addressSourceId)||a.m.id.localeCompare(b.m.id));
+   const candidates=g.members.map(m=>({m,p:people.find(p=>p.id===m.id)})).filter(x=>!isMapMinor(x.m)&&x.p&&(x.p.address||x.p.lat!=null&&x.p.lng!=null)).sort((a,b)=>rank(a.m)-rank(b.m)||Number(b.m.id===extra.addressSourceId)-Number(a.m.id===extra.addressSourceId)||a.m.id.localeCompare(b.m.id));
    const source=candidates[0]?.p;
    return {id,type:'family',name:g.name,city:'',address:'',lat:null,lng:null,phone:'',ministry:g.members.some(m=>m.hierarchy==='pastores')?'Pastores':'',familyId:'',ownAddress:true,...extra,...(source?{address:source.address,city:source.city,lat:source.lat,lng:source.lng,addressSourceId:source.id,addressSourceName:source.name}:extra.addressSourceId?{address:'',city:'',lat:null,lng:null,addressSourceId:''}:{})};
   });
@@ -6039,6 +6039,7 @@ ritualRoot.render(<LibroPastoralApp />);
   return [...families,...people];
  }
  window.GestorCerca={
+  getMemberLocation(id){return registry(true).find(r=>r.type==='person'&&r.id===id);},
   getState(){const records=registry(),projected=projectedData();return {...projected,records,commissions:[...(projected.commissions||[]).filter(g=>!g.source),...CongregationModel.teams(appData,records,projected.personnelLinks||{})]};},
   save(next){try{next=copy(next);const current=registry();
     for(const family of next.records.filter(r=>r.type==='family')){const before=current.find(r=>r.id===family.id),source=next.records.find(r=>r.id===before?.addressSourceId);if(source&&['address','city','lat','lng'].some(k=>family[k]!==before[k]))for(const k of ['address','city','lat','lng'])source[k]=family[k];}
@@ -6327,7 +6328,7 @@ ritualRoot.render(<LibroPastoralApp />);
  const $=id=>document.getElementById(id),address=$('member-address'),location=$('member-map-location');
  window.memberEffectiveLocation=function(member){
   if(!member)return {};
-  const record=window.GestorCerca?.getState().records.find(r=>r.id===member.id);
+  const record=window.GestorCerca?.getMemberLocation ? window.GestorCerca.getMemberLocation(member.id) : window.GestorCerca?.getState().records.find(r=>r.id===member.id);
   if(!record)return {...member};
   return {...member,address:record.address||member.address||'',mapLocation:record.lat!=null&&record.lng!=null?record.lat+','+record.lng:member.mapLocation||record.address||'',sharedHome:record.ownAddress===false};
  };
