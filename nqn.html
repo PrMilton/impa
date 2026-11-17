@@ -2984,7 +2984,7 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
                 address: titleCaseWords(document.getElementById('member-address').value.trim()),
                 mapLocation: document.getElementById('member-map-location').value.trim(),
                 documentType: document.getElementById('member-document-type').value,
-                documentNumber: document.getElementById('member-document-number').value.trim(),
+                documentNumber: document.getElementById('member-document-number').dataset.privateSurveyDni ? (previous.documentNumber || '') : document.getElementById('member-document-number').value.trim(),
                 joinDate: document.getElementById('member-join-date').value,
                 baptismDate: document.getElementById('member-baptism-date').value,
                 baptismPlace: titleCaseWords(document.getElementById('member-baptism-place').value.trim()),
@@ -5990,6 +5990,7 @@ ritualRoot.render(<LibroPastoralApp />);
  }
  function registry(){const projected=projectedData();
   const people=membersRegistry.filter(m=>!isMapMinor(m)).map(m=>{const familyId=m.familyName?'household:'+normalizePersonName(m.familyName):'',source=memberLocation(m);let extra=locationExtras(projected.locations[m.id]);
+   if(extra.ownAddress===false){for(const k of ['address','city','lat','lng','addressSourceId'])delete extra[k];extra.ownAddress=true;}
    const changed=(extra.sourceAddress!==undefined&&extra.sourceAddress!==(m.address||''))||(extra.sourceMapLocation!==undefined&&extra.sourceMapLocation!==(m.mapLocation||''));
    // Older map copies have no source stamps; never let their empty fields hide member data.
    const legacyChanged=(extra.sourceAddress===undefined||(extra.sourceMapLocation===undefined&&m.mapLocation))&&source.address&&extra.address&&normalizePersonName(extra.address)!==normalizePersonName(source.address);
@@ -6002,10 +6003,17 @@ ritualRoot.render(<LibroPastoralApp />);
   const families=familyGroups().filter(g=>g.members.some(m=>!isMapMinor(m))).map(g=>{
    const id='household:'+g.key,extra=locationExtras(projected.locations[id]);
    const parents=g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='hijo/a'&&r.sharesHousehold!==false&&g.members.some(c=>c.id===r.personId))||g.members.some(c=>(c.relationships||[]).some(r=>r.personId===m.id&&['madre','padre','padre/madre'].includes(r.type)&&r.sharesHousehold!==false)));
-   const candidates=(parents.length?parents:g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='cónyuge'&&r.sharesHousehold!==false))).map(m=>people.find(p=>p.id===m.id)).filter(Boolean).sort((a,b)=>Number(Boolean(b.address||b.lat!==null))-Number(Boolean(a.address||a.lat!==null))||a.id.localeCompare(b.id));
-   const source=candidates[0];
+   const spouses=g.members.filter(m=>(m.relationships||[]).some(r=>r.type==='cónyuge'&&r.sharesHousehold!==false));
+   const rank=m=>parents.includes(m)?0:spouses.includes(m)?1:2;
+   const candidates=g.members.map(m=>({m,p:people.find(p=>p.id===m.id)})).filter(x=>x.p&&(x.p.address||x.p.lat!=null&&x.p.lng!=null)).sort((a,b)=>rank(a.m)-rank(b.m)||Number(b.m.id===extra.addressSourceId)-Number(a.m.id===extra.addressSourceId)||a.m.id.localeCompare(b.m.id));
+   const source=candidates[0]?.p;
    return {id,type:'family',name:g.name,city:'',address:'',lat:null,lng:null,phone:'',ministry:g.members.some(m=>m.hierarchy==='pastores')?'Pastores':'',familyId:'',ownAddress:true,...extra,...(source?{address:source.address,city:source.city,lat:source.lat,lng:source.lng,addressSourceId:source.id,addressSourceName:source.name}:extra.addressSourceId?{address:'',city:'',lat:null,lng:null,addressSourceId:''}:{})};
   });
+  for(const person of people){
+   const member=membersRegistry.find(m=>m.id===person.id),family=families.find(f=>f.id===person.familyId);
+   const separate=(member.relationships||[]).some(r=>r.sharesHousehold===false)||membersRegistry.some(m=>(m.relationships||[]).some(r=>r.personId===member.id&&r.sharesHousehold===false));
+   if(family&&!person.address&&person.lat==null&&person.lng==null&&!separate)Object.assign(person,{address:family.address,city:family.city,lat:family.lat,lng:family.lng,ownAddress:false,addressSourceId:family.addressSourceId});
+  }
   return [...families,...people];
  }
  window.GestorCerca={
@@ -6027,7 +6035,7 @@ ritualRoot.render(<LibroPastoralApp />);
   async open(){if(!initPromise)initPromise=pull();await initPromise;if(!frame)mount();else if(!frame.contentDocument?.querySelector('dialog[open]'))frame.contentWindow.refreshGestorContext?.();},
   refresh(){if(frame)mount();},
  };
- function mount(){if(!frame){frame=document.createElement('iframe');frame.id='gestor-cerca-frame';frame.title='Mapa y organización de la congregación';frame.style.cssText='width:100%;height:calc(100vh - 210px);min-height:650px;border:0;background:#202938';document.getElementById('cerca-container').append(frame);}if(location.protocol==='http:'||location.protocol==='https:'){frame.removeAttribute('srcdoc');frame.src=new URL('map-module.html?v=8.5.8',location.href).href;}else{const html=JSON.parse(document.getElementById('cerca-bundle').textContent);frame.srcdoc=html;}}
+ function mount(){if(!frame){frame=document.createElement('iframe');frame.id='gestor-cerca-frame';frame.title='Mapa y organización de la congregación';frame.style.cssText='width:100%;height:calc(100vh - 210px);min-height:650px;border:0;background:#202938';document.getElementById('cerca-container').append(frame);}if(location.protocol==='http:'||location.protocol==='https:'){frame.removeAttribute('srcdoc');frame.src=new URL('map-module.html?v=8.5.9',location.href).href;}else{const html=JSON.parse(document.getElementById('cerca-bundle').textContent);frame.srcdoc=html;}}
  const addAction=(host,text,code)=>{if(!host||host.querySelector('[data-cerca-action]'))return;const b=document.createElement('button');b.dataset.cercaAction='1';b.textContent=text;b.style.cssText='margin:8px;padding:10px;border:1px solid #7890b0;border-radius:8px;background:#253043;color:#edf1f8';b.onclick=()=>GestorCerca.openContext(code);host.append(b);};
  for(const code of ['jue','vie','sab','dom'])addAction(document.getElementById('card-'+code),'Equipo y traslados','cartelera');
  addAction(document.getElementById('sel-limpieza')?.parentElement,'Coordinar limpieza y traslados','cartelera');
@@ -6202,7 +6210,15 @@ ritualRoot.render(<LibroPastoralApp />);
  async function list(status='pending'){const {f,db}=await connect();const q=f.query(f.collection(db,IMPA_SURVEY_CONFIG.collection),f.where('status','==',status),f.limit(100));const s=await f.getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));}
  async function finish(id,status,memberId=''){const {f,db}=await connect();await f.updateDoc(f.doc(db,IMPA_SURVEY_CONFIG.collection,id),{status,memberId,reviewedAt:f.serverTimestamp()});}
  async function logout(){const {g,auth}=await connect();await g.signOut(auth);}
- return {send,login,list,finish,logout};
+ async function memberDni(memberId,importIds=[]){
+  const {f,db,auth}=await connect();if(!auth.currentUser)throw {code:'auth/login-required'};
+  const snapshot=await f.getDocs(f.query(f.collection(db,IMPA_SURVEY_CONFIG.collection),f.where('memberId','==',memberId)));
+  const rows=new Map(snapshot.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+  for(const id of importIds){if(rows.has(id))continue;const d=await f.getDoc(f.doc(db,IMPA_SURVEY_CONFIG.collection,id));if(d.exists())rows.set(id,{id,...d.data()});}
+  return [...rows.values()].filter(r=>r.status==='reviewed'&&(!r.memberId||r.memberId===memberId)&&/^\d{7,8}$/.test(r.data?.dni||'')).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0))[0]?.data.dni||'';
+ }
+ async function signedIn(){const {auth}=await connect();await auth.authStateReady();return !!auth.currentUser;}
+ return {send,login,list,finish,logout,memberDni,signedIn};
 })();
 </script><script>(()=>{
  const $=id=>document.getElementById(id);let modal,user;
@@ -6224,7 +6240,7 @@ ritualRoot.render(<LibroPastoralApp />);
   d.append(node('p','Pendientes muestra solo las respuestas por resolver. Archivar las quita de esa lista sin cambiar Miembros; podés recuperarlas en Archivadas.'),button(user?'Actualizar pendientes':'Ingresar con Google para revisar',()=>load('pending')),button('Ver respuestas revisadas',()=>load('reviewed')),button('Ver archivadas',()=>load('dismissed')),button('Cerrar sesión',async()=>{try{++loadVersion;await SurveyService.logout();user=null;show();}catch(e){status.textContent=message(e);}}));
   if(user)await load(typeof initialState==='string'?initialState:'pending');
  }
- function review(item){const d=shell();const data=SurveyModel.clean(item.data);d.append(node('h3',data.name),node('p','Compará la respuesta con el padrón. Ningún dato se reemplaza sin elegirlo. Podés incorporar las fechas exactas y el lugar del bautismo. Los años sin día y mes permanecen en la respuesta privada; no se inventan fechas. El DNI se conserva solo en esta bandeja privada. Los vínculos y la categoría se revisan manualmente.'));
+ function review(item){const d=shell();const data=SurveyModel.clean(item.data);d.append(node('h3',data.name),node('p','Compará la respuesta con el padrón. Ningún dato se reemplaza sin elegirlo. Podés incorporar las fechas exactas y el lugar del bautismo. Los años sin día y mes permanecen en la respuesta privada; no se inventan fechas. El DNI se conserva de forma privada y se consulta desde la ficha del miembro después de vincular y revisar la respuesta. Los vínculos y la categoría se revisan manualmente.'));
   const possible=SurveyModel.matches(data,membersRegistry);for(const p of possible)d.append(node('p',p.reason+': '+p.member.name));
   const label=node('label','Vincular con una ficha existente o crear una nueva');const select=node('select');select.style.cssText='width:100%;padding:12px;margin:12px 0';select.add(new Option('Elegí una ficha…',''));select.add(new Option('Crear un nuevo miembro','new'));[...membersRegistry].sort((a,b)=>a.name.localeCompare(b.name,'es')).forEach(m=>select.add(new Option(m.name,m.id)));label.append(select);d.append(label);
   const detail=node('div');const notice=node('p');notice.setAttribute('role','status');const choices=[];
@@ -6247,6 +6263,28 @@ ritualRoot.render(<LibroPastoralApp />);
  window.openSurveyInbox=show;
  const bar=document.querySelector('#vista-miembros button[onclick="exportMembersJson()"]')?.parentElement;
  const b=button('Encuesta y respuestas',show);bar?.append(b);
+})();
+</script><script>(()=>{
+ const field=document.getElementById('member-document-number');if(!field)return;
+ const note=document.createElement('p');note.style.cssText='font-size:13px;margin:8px 0';note.setAttribute('role','status');
+ const button=document.createElement('button');button.type='button';button.textContent='Consultar DNI de la encuesta';button.className='px-4 py-2 rounded-lg border font-bold';
+ field.parentElement.append(note,button);let generation=0;
+ function reset(){generation++;delete field.dataset.privateSurveyDni;field.readOnly=false;button.disabled=false;note.textContent='El DNI de la encuesta se consulta con la cuenta autorizada.';}
+ async function load(interactive){const id=document.getElementById('member-id').value;if(!id){note.textContent='Elegí primero una ficha de Miembros.';return;}const version=++generation;button.disabled=true;
+  try{if(interactive)await SurveyService.login();else if(!await SurveyService.signedIn())return;
+   const ids=Object.entries(appData.surveyImports||{}).filter(([,memberId])=>memberId===id).map(([responseId])=>responseId);
+   const dni=await SurveyService.memberDni(id,ids);
+   if(version!==generation||document.getElementById('member-id').value!==id)return;
+   if(dni){field.value=dni;field.readOnly=true;field.dataset.privateSurveyDni='1';note.textContent='DNI de la encuesta revisada · acceso privado. Se conserva al guardar la ficha.';}
+   else note.textContent='No hay DNI en una encuesta revisada y vinculada a esta ficha. Revisá su respuesta en Encuesta y respuestas.';
+  }catch(e){if(version===generation)note.textContent='No se pudo consultar el DNI. Ingresá con la cuenta autorizada y reintentá.';}
+  finally{if(version===generation)button.disabled=false;}
+ }
+ button.onclick=()=>load(true);
+ const edit=window.editMember;window.editMember=function(id){reset();const result=edit.apply(this,arguments);void load(false);return result;};
+ const fresh=window.newMemberForm;window.newMemberForm=function(){reset();return fresh.apply(this,arguments);};
+ const logout=SurveyService.logout;SurveyService.logout=async function(){await logout();if(field.dataset.privateSurveyDni){field.value=membersRegistry.find(m=>m.id===document.getElementById('member-id').value)?.documentNumber||'';}reset();};
+ reset();
 })();
 </script></body>
 </html>
