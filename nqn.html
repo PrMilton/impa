@@ -2243,10 +2243,10 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
                 if (res.ok) {
                     const data = await res.json();
                     lastUpdateTime = data.updateTime;
-                    setSyncStatus('success');
+                    setSyncStatus('success'); return true;
                 } else throw new Error("HTTP " + res.status);
             } catch (e) {
-                setSyncStatus('error');
+                setSyncStatus('error'); return false;
             } finally {
                 isSaving = false;
             }
@@ -6098,6 +6098,65 @@ ritualRoot.render(<LibroPastoralApp />);
  const bar=document.querySelector('#vista-miembros button[onclick="exportMembersJson()"]')?.parentElement;
  for(const [label,fn] of [['Revisar duplicados',reviewMemberDuplicates],['Papelera',openMemberTrash]]){const b=document.createElement('button');b.textContent=label;b.className='px-4 py-2.5 rounded-xl bg-blue-700 text-white font-bold';b.onclick=fn;bar?.append(b);}
  const b=document.createElement('button');b.type='button';b.textContent='Eliminar ficha';b.style.cssText='color:var(--ui-red);margin:10px';b.onclick=()=>{const id=document.getElementById('member-id').value;if(id)removeMember(id);else showToast('Primero elegí una ficha para editar.','error');};document.getElementById('member-form').append(b);
+})();
+</script><script>window.IMPA_SURVEY_CONFIG = {
+  enabled: true,
+  firebase: {apiKey:'AIzaSyBPNi8h-XNpwyISUoaDe5tjf4SjL0Z3I1o',authDomain:'cartelera-pastoral-neuqu-cf1dd.firebaseapp.com',projectId:'cartelera-pastoral-neuqu-cf1dd',appId:'1:117860342876:web:e14d816a7fe1ed15d85a99'},
+  whatsapp: '',
+  collection: 'member_surveys',
+  publicUrl: 'https://prmilton.github.io/impa/encuesta.html'
+};
+</script><script>(function(root){
+ const limits={name:120,birthDate:10,phone:60,contactOwner:120,city:80,address:240,reference:300,family:500,baptism:400,membership:100,helper:120};
+ function clean(input){const out={};for(const [key,max] of Object.entries(limits)){out[key]=String(input[key]||'').trim();if(out[key].length>max)throw Error('El texto de '+key+' es demasiado largo.');}if(out.name.length<3)throw Error('Escribí tu nombre y apellido.');if(out.birthDate&&(!/^\d{4}-\d{2}-\d{2}$/.test(out.birthDate)||Number.isNaN(Date.parse(out.birthDate+'T12:00:00'))||out.birthDate>new Date().toISOString().slice(0,10)))throw Error('Revisá la fecha de nacimiento.');return out;}
+ function normalize(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+ function matches(data,members){const name=normalize(data.name),phone=data.phone.replace(/\D/g,'');return members.map(m=>{const sameName=normalize(m.name)===name,samePhone=phone.length>=8&&String(m.phone||'').replace(/\D/g,'').slice(-8)===phone.slice(-8);return {member:m,reason:sameName?'Mismo nombre':samePhone?'Teléfono coincidente (puede ser familiar)':'',score:sameName?2:samePhone?1:0};}).filter(x=>x.score).sort((a,b)=>b.score-a.score);}
+ const labels={name:'Nombre y apellido',birthDate:'Nacimiento',phone:'Teléfono',contactOwner:'El teléfono pertenece a',city:'Ciudad',address:'Dirección',reference:'Referencia para llegar',family:'Familiares que asisten',baptism:'Bautismo',membership:'Membresía informada',helper:'Completado con ayuda de'};
+ function message(data){return 'Actualización de ficha — IMPA Neuquén\n\n'+Object.entries(labels).map(([k,label])=>label+': '+(data[k]||'Pendiente')).join('\n')+'\n\nAutorizo el uso de estos datos para actualizar mi ficha y organizar el acompañamiento de la congregación.';}
+ const api={clean,matches,message,labels,limits};root.SurveyModel=api;if(typeof module!=='undefined')module.exports=api;
+})(globalThis);
+</script><script>window.SurveyService=(()=>{
+ let runtime;
+ async function connect(){if(!IMPA_SURVEY_CONFIG.enabled||!IMPA_SURVEY_CONFIG.firebase)throw Error('El envío todavía no está habilitado.');if(!runtime)runtime=Promise.all([import('https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js'),import('https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js'),import('https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js')]).then(([a,f,g])=>{const app=a.initializeApp(IMPA_SURVEY_CONFIG.firebase,'impa-survey');return {f,g,db:f.getFirestore(app),auth:g.getAuth(app)};}).catch(e=>{runtime=null;throw e;});return runtime;}
+ async function send(id,data){const {f,db}=await connect();await f.setDoc(f.doc(db,IMPA_SURVEY_CONFIG.collection,id),{schema:1,status:'pending',consent:true,data:SurveyModel.clean(data),createdAt:f.serverTimestamp()});}
+ async function login(){const {g,auth}=await connect();await g.setPersistence(auth,g.browserSessionPersistence);if(!auth.currentUser)await g.signInWithPopup(auth,new g.GoogleAuthProvider());return auth.currentUser;}
+ async function list(status='pending'){const {f,db}=await connect();const q=f.query(f.collection(db,IMPA_SURVEY_CONFIG.collection),f.where('status','==',status),f.limit(100));const s=await f.getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));}
+ async function finish(id,status,memberId=''){const {f,db}=await connect();await f.updateDoc(f.doc(db,IMPA_SURVEY_CONFIG.collection,id),{status,memberId,reviewedAt:f.serverTimestamp()});}
+ async function logout(){const {g,auth}=await connect();await g.signOut(auth);}
+ return {send,login,list,finish,logout};
+})();
+</script><script>(()=>{
+ const $=id=>document.getElementById(id);let modal,user;
+ function node(tag,text){const n=document.createElement(tag);if(text)n.textContent=text;return n;}
+ function button(text,action){const b=node('button',text);b.type='button';b.className='px-4 py-2 rounded-lg border font-bold';b.onclick=action;return b;}
+ function shell(){modal?.remove();modal=node('dialog');modal.id='survey-inbox';modal.style.cssText='width:min(980px,96vw);max-height:90vh;padding:24px;overflow:auto;background:var(--ui-panel);color:var(--ui-text);border:1px solid var(--ui-line);border-radius:16px';modal.append(node('h2','Encuesta y fichas por revisar'),button('Cerrar',()=>modal.close()));document.body.append(modal);modal.showModal();return modal;}
+ function message(e){return e?.code==='permission-denied'?'Esta cuenta no tiene permiso para revisar respuestas.':e?.code==='auth/popup-blocked'?'El navegador bloqueó la ventana de Google. Permití la ventana y volvé a ingresar.':'No se pudo completar la operación. Revisá la conexión y la cuenta autorizada. Código: '+(e?.code||'sin código');}
+ async function show(){const d=shell();const actions=node('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin:18px 0';actions.append(button('Abrir encuesta',()=>window.open(IMPA_SURVEY_CONFIG.publicUrl,'_blank','noopener,noreferrer')),button('Copiar invitación para WhatsApp',async()=>{const text='Hola, hermanos. Estamos actualizando las fichas de la congregación. Podés completar la encuesta: '+IMPA_SURVEY_CONFIG.publicUrl+'\nSi te resulta difícil, respondé este mensaje o mandanos un audio y te ayudamos. Los datos que no recordás pueden quedar pendientes.';try{await navigator.clipboard.writeText(text);showToast('Invitación copiada','success');}catch{const t=node('textarea');t.value=text;d.append(t);t.select();}}));d.append(actions);
+  const details=node('details');details.append(node('summary','Cuestionario para responder por mensaje o audio'));const questionnaire=node('textarea');questionnaire.readOnly=true;questionnaire.style.cssText='width:100%;min-height:240px';questionnaire.value='Hola, hermanos. Para actualizar tu ficha, respondé lo que recuerdes. También podés mandar un audio o pedir ayuda.\n\n1. Nombre y apellido.\n2. Fecha de nacimiento.\n3. Teléfono de contacto y de quién es.\n4. Ciudad, dirección y referencia.\n5. Familiares que asisten y parentesco.\n6. ¿Estás bautizado/a? ¿Cuándo y dónde?\n7. ¿Recordás tu categoría de membresía?\n\n¿Autorizás que usemos estos datos para actualizar tu ficha y organizar el acompañamiento? No envíes DNI ni información médica.';details.append(questionnaire,button('Copiar cuestionario',()=>navigator.clipboard.writeText(questionnaire.value).then(()=>showToast('Cuestionario copiado','success')).catch(()=>questionnaire.select())));d.append(details);
+  const status=node('p');status.setAttribute('role','status');d.append(status);
+  if(!IMPA_SURVEY_CONFIG.enabled){status.textContent='La encuesta está preparada. Falta habilitar el envío y el acceso privado a las respuestas en Firebase.';return;}
+  async function load(state){try{status.textContent='Conectando…';user=await SurveyService.login();const rows=await SurveyService.list(state);status.textContent='Sesión: '+user.email+' · '+rows.length+' respuestas '+(state==='pending'?'pendientes':'revisadas')+' (hasta 100 por carga).';d.querySelector('[data-responses]')?.remove();const list=node('section');list.dataset.responses='';for(const item of rows){const row=node('div');row.style.cssText='padding:14px;border-bottom:1px solid var(--ui-line);display:flex;gap:12px;justify-content:space-between';row.append(node('span',item.data.name),button(state==='pending'?'Revisar ficha':'Ver respuesta',()=>{if(state==='pending')review(item);else{const history=shell();history.append(node('h3',item.data.name));const text=node('pre',SurveyModel.message(item.data));text.style.cssText='white-space:pre-wrap;font:inherit';history.append(text,button('Volver',show));}}));list.append(row);}if(!rows.length)list.append(node('p','No hay respuestas en esta lista.'));d.append(list);}catch(e){status.textContent=message(e);}}
+  d.append(button(user?'Actualizar pendientes':'Ingresar con Google para revisar',()=>load('pending')),button('Ver respuestas revisadas',()=>load('reviewed')),button('Cerrar sesión',async()=>{try{await SurveyService.logout();user=null;show();}catch(e){status.textContent=message(e);}}));
+ }
+ function review(item){const d=shell();const data=SurveyModel.clean(item.data);d.append(node('h3',data.name),node('p','Compará la respuesta con el padrón. Ningún dato se reemplaza sin elegirlo. Los parentescos, el bautismo y la membresía informada se revisan manualmente.'));
+  const possible=SurveyModel.matches(data,membersRegistry);for(const p of possible)d.append(node('p',p.reason+': '+p.member.name));
+  const label=node('label','Vincular con una ficha existente o crear una nueva');const select=node('select');select.style.cssText='width:100%;padding:12px;margin:12px 0';select.add(new Option('Elegí una ficha…',''));select.add(new Option('Crear un nuevo miembro','new'));[...membersRegistry].sort((a,b)=>a.name.localeCompare(b.name,'es')).forEach(m=>select.add(new Option(m.name,m.id)));label.append(select);d.append(label);
+  const detail=node('div');const notice=node('p');notice.setAttribute('role','status');const choices=[];
+  select.onchange=()=>{detail.replaceChildren();choices.length=0;const current=membersRegistry.find(m=>m.id===select.value);if(!select.value)return;
+   const proposed={name:data.name,birthDate:data.birthDate,phone:data.phone,address:[data.address,data.city&&data.city!=='Otra localidad'?data.city:''].filter(Boolean).join(', ')};
+   for(const [field,value] of Object.entries(proposed)){if(!value)continue;const row=node('label');row.style.cssText='display:block;border:1px solid var(--ui-line);padding:12px;margin:10px 0;border-radius:8px';const cb=node('input');cb.type='checkbox';cb.checked=!current||!current[field];choices.push({field,value,cb});row.append(cb,document.createTextNode(' '+({name:'Nombre',birthDate:'Nacimiento',phone:'Teléfono',address:'Dirección'})[field]+': '+value),node('p','Actual: '+(current?.[field]||'Sin completar')));detail.append(row);}
+   detail.append(node('h3','Información para revisar'),node('pre',SurveyModel.message(data)));const pre=detail.querySelector('pre');pre.style.cssText='white-space:pre-wrap;font:inherit';
+  };d.append(detail,notice);
+  const apply=button('Guardar selección en Miembros',async()=>{if(!select.value){notice.textContent='Elegí una ficha o la opción Crear un nuevo miembro.';return;}if(select.value==='new'&&possible.length&&!confirm('Hay coincidencias en el padrón. ¿Confirmás que es otra persona y querés crear una ficha nueva?'))return;apply.disabled=true;try{
+   const prior=appData.surveyImports?.[item.id];let member=prior?membersRegistry.find(m=>m.id===prior):membersRegistry.find(m=>m.id===select.value);
+   if(!prior){if(select.value!=='new'&&!member)throw Error('Ficha no disponible');if(!member){member={id:createPersonId(),name:data.name,status:'activo',hierarchy:'congregacion',hierarchyMode:'manual',membershipCategory:'',relationships:[],createdAt:Date.now(),source:'encuesta'};membersRegistry.push(member);}for(const c of choices)if(c.cb.checked){if(c.field==='address'&&member.address!==c.value)member.mapLocation='';member[c.field]=c.value;}member.updatedAt=Date.now();appData.surveyImports={...(appData.surveyImports||{}),[item.id]:member.id};}
+   notice.textContent='Guardando en el padrón…';ensureRegistryLinks();syncPersonalToCartelera(false);clearTimeout(syncTimeout);const saved=await performCloudSave();if(!saved){notice.textContent='No se pudo confirmar el guardado del padrón. La respuesta sigue pendiente. Reintentá sin cerrar esta ventana.';return;}
+   await SurveyService.finish(item.id,'reviewed',member.id);renderMembersRegistry();renderDashboard();renderWeek();notice.textContent='Ficha guardada y respuesta revisada.';apply.hidden=true;d.append(button('Abrir ficha del miembro',()=>{d.close();switchTab('miembros');editMember(member.id);}),button('Volver a pendientes',show));
+  }catch(e){notice.textContent=message(e)+' La respuesta sigue pendiente.';}finally{apply.disabled=false;}});d.append(apply,button('Dejar pendiente',show));
+ }
+ window.openSurveyInbox=show;
+ const bar=document.querySelector('#vista-miembros button[onclick="exportMembersJson()"]')?.parentElement;
+ const b=button('Encuesta y respuestas',show);bar?.append(b);
 })();
 </script></body>
 </html>
