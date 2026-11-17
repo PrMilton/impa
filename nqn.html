@@ -1186,6 +1186,14 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
 @media(max-width:767px){#vista-miembros>div>div.grid{grid-template-columns:1fr!important}#member-form-card{position:relative!important;top:0!important;max-height:65dvh!important}#families-registry-list{grid-template-columns:1fr!important}}
 }
 @media screen {body:has(#vista-miembros:not(.hidden)){overflow:clip visible!important}main:has(#vista-miembros:not(.hidden)),#vista-miembros{overflow:visible!important}}
+</style><style>#member-file-editor{width:min(1480px,96vw);max-width:96vw;height:94dvh;max-height:94dvh;padding:0;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-panel);color:var(--ui-ink);overflow:hidden}
+#member-file-editor[open]{display:flex;flex-direction:column}#member-file-editor::backdrop,#file-unsaved::backdrop{background:rgb(10 18 30 / .75);backdrop-filter:blur(3px)}
+#member-file-editor header,#member-file-editor footer{display:flex;align-items:center;gap:12px;padding:16px 22px;background:var(--ui-soft);flex-shrink:0}#member-file-editor header{justify-content:space-between;border-bottom:1px solid var(--ui-line)}#member-file-editor h2{font-size:23px;font-weight:750;margin:3px 0}#member-file-editor small{letter-spacing:.13em;font-size:11px;color:var(--ui-muted)}#file-position{font-size:13px;color:var(--ui-muted)}
+#file-body{overflow:auto;min-height:0;flex:1}#member-file-editor #member-form{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:20px;padding:20px;overflow:visible!important;margin:0}#member-file-editor #member-form>*{margin:0!important}.file-column{display:flex;flex-direction:column;gap:14px;min-width:0}.file-column h3{font-size:16px;font-weight:750;border-bottom:1px solid var(--ui-line);padding-bottom:10px}.file-column .member-input{font-size:15px!important;min-height:40px}.file-column .member-label{font-size:12px!important}.file-column .file-pending{border-color:var(--ui-gold)!important;background:var(--ui-soft)!important}
+#member-file-editor footer{border-top:1px solid var(--ui-line);flex-wrap:wrap}#file-state{flex:1;min-width:160px;font-size:13px;color:var(--ui-muted)}#member-file-editor button,#file-unsaved button,.file-launcher button{padding:10px 14px;border:1px solid var(--ui-line);border-radius:10px;font-weight:650;font-size:14px}#file-save-next,.file-launcher button{background:var(--ui-blue);color:white}#member-file-editor button:disabled{opacity:.4;cursor:not-allowed}.file-launcher{padding:22px}.file-launcher h3{font-weight:750;font-size:19px}.file-launcher p{margin:10px 0 18px;color:var(--ui-muted)}.file-launcher button{margin:5px}
+#file-unsaved{width:min(480px,94vw);padding:24px;background:var(--ui-panel);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:16px}#file-unsaved h2{font-size:20px;font-weight:750}#file-unsaved p{margin:12px 0}#file-unsaved button{margin:5px}
+@media screen{#vista-miembros>div>div.grid{grid-template-columns:minmax(0,1fr)!important}#vista-miembros>div>div.grid>section{grid-column:1!important}#member-form-card{position:static!important;max-height:none!important}.file-launcher{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:14px 20px}.file-launcher p{flex:1;margin:0}.file-launcher h3{font-size:17px}}
+@media(max-width:1000px){#member-file-editor #member-form{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){#member-file-editor #member-form{grid-template-columns:1fr;padding:14px}#member-file-editor footer{gap:6px;padding:10px}#file-state{flex-basis:100%;order:-1}#member-file-editor h2{font-size:19px}#member-file-editor button{padding:9px;font-size:12px}}
 </style></head>
 <body class="text-gray-800 bg-gray-100 dark:bg-gray-900 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
 
@@ -3069,7 +3077,7 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
                 if (membersScroller) membersScroller.scrollTop = returnState.scrollTop;
                 memberReturnState = null;
             }));
-            showToast('Miembro guardado y equipos vinculados', 'success');
+            showToast('Miembro guardado y equipos vinculados', 'success'); return member.id;
         };
 
         window.removeMember = function(id) {
@@ -6285,6 +6293,55 @@ ritualRoot.render(<LibroPastoralApp />);
  const fresh=window.newMemberForm;window.newMemberForm=function(){reset();return fresh.apply(this,arguments);};
  const logout=SurveyService.logout;SurveyService.logout=async function(){await logout();if(field.dataset.privateSurveyDni){field.value=membersRegistry.find(m=>m.id===document.getElementById('member-id').value)?.documentNumber||'';}reset();};
  reset();
+})();
+</script><script>(()=>{
+ const $=id=>document.getElementById(id),form=$('member-form'),card=$('member-form-card');if(!form||!card)return;
+ const baseEdit=window.editMember,baseNew=window.newMemberForm,baseSave=window.saveMember;
+ const dialog=document.createElement('dialog');dialog.id='member-file-editor';dialog.setAttribute('aria-labelledby','file-title');
+ dialog.innerHTML='<header><div><small>FICHERO DE MIEMBROS</small><h2 id="file-title">Ficha de miembro</h2><p id="file-position"></p></div><button type="button" id="file-close" aria-label="Cerrar fichero">✕</button></header><div id="file-body"></div><footer><button type="button" id="file-prev">← Anterior</button><span id="file-state" role="status"></span><button type="button" id="file-save">Guardar</button><button type="button" id="file-save-next">Guardar y siguiente →</button><button type="button" id="file-next">Siguiente →</button></footer>';
+ document.body.append(dialog);$('file-body').append(form);
+ // Move existing controls rather than creating a second form or a second data model.
+ const original=[...form.children],columns=['Datos personales y contacto','Familia y domicilio','Membresía y ministerio'].map(title=>{const s=document.createElement('section');s.className='file-column';const h=document.createElement('h3');h.textContent=title;s.append(h);form.append(s);return s;});
+ const family=['member-address','member-map-location','member-family-name','member-related-person','member-notes'];
+ const ministry=['member-category','member-hierarchy','member-join-date','member-baptism-place','member-probation-date','member-exit-date'];
+ for(const el of original){if(el.tagName==='INPUT'&&el.type==='hidden')continue;if(el.tagName==='BUTTON'){el.hidden=true;continue;}const ids=[el.id,...[...el.querySelectorAll('[id]')].map(x=>x.id)];columns[ids.some(x=>family.includes(x))?1:ids.some(x=>ministry.includes(x))?2:0].append(el);}
+ // Keep every field accessible to assistive technology, including the original unbound labels.
+ for(const label of form.querySelectorAll('label.member-label')){const input=label.parentElement.querySelector('input[id],select[id],textarea[id]');if(input)label.htmlFor=input.id;}
+ card.innerHTML='<div class="file-launcher"><h3>Fichero de miembros</h3><p>Abrí una ficha para editarla y pasar a la siguiente sin volver a la lista.</p><button type="button" id="file-open-first">Abrir fichero</button><button type="button" id="file-new">+ Nuevo miembro</button><h3 id="member-form-title" hidden>Nuevo miembro</h3></div>';
+ let order=[],baseline='',busy=false,failed=false,activeId='';
+ // Private DNI is asynchronously loaded and must not mark the public form as edited.
+ let numberBaseline='';
+ function stamp(){baseline=snapshotWithoutDni();numberBaseline=$('member-document-number').value;failed=false;}
+ function snapshotWithoutDni(){return JSON.stringify({fields:[...form.querySelectorAll('input[id],select[id],textarea[id]')].filter(el=>el.id!=='member-document-number').map(el=>[el.id,el.type==='checkbox'?el.checked:el.value]),relations:memberRelationshipDraft});}
+ function dirty(){return failed||baseline!==snapshotWithoutDni()||(!$('member-document-number').dataset.privateSurveyDni&&$('member-document-number').value!==numberBaseline);}
+ function sequence(id){
+  const scope=document.querySelector('#member-detail-modal:not(.hidden)')||$('members-registry-list');
+  const selected=document.querySelector('#members-registry-list article[onclick*="'+id+'"]');
+  const lane=selected?.closest('.member-lane');
+  const nodes=[...(lane||scope||document).querySelectorAll('article[onclick^="openMemberDetail("]')];
+  let ids=nodes.map(n=>n.getAttribute('onclick').match(/openMemberDetail\('([^']+)'\)/)?.[1]).filter(Boolean);
+  if(membersRegistryView==='families'){const member=membersRegistry.find(m=>m.id===id);ids=membersRegistry.filter(m=>member?.familyName&&normalizePersonName(m.familyName)===normalizePersonName(member.familyName)).map(m=>m.id);}
+  if(!ids.includes(id))ids=[id];return [...new Set(ids)].filter(x=>membersRegistry.some(m=>m.id===x));
+ }
+ function update(){const index=order.indexOf(activeId),member=membersRegistry.find(m=>m.id===activeId);$('file-title').textContent=member?.name||'Nuevo miembro';$('file-position').textContent=activeId?'Ficha '+(index+1)+' de '+order.length+' · orden de la lista seleccionada':'Completá los datos disponibles';$('file-prev').disabled=busy||index<=0;$('file-next').disabled=busy||index<0||index>=order.length-1;$('file-save-next').disabled=busy||index<0||index>=order.length-1;$('file-save').disabled=busy;$('file-close').disabled=busy;form.inert=busy;$('file-state').textContent=busy?'Guardando en la nube…':failed?'No se confirmó el guardado. Reintentá antes de avanzar.':dirty()?'Cambios sin guardar':'Sin cambios pendientes';
+  for(const id of ['member-name','member-birth','member-category'])$(id).classList.toggle('file-pending',!$(id).value);
+ }
+ function open(id,newSequence=true){if(newSequence)order=id?sequence(id):[];activeId=id||'';if(id)baseEdit(id);else baseNew(false);stamp();if(!dialog.open)dialog.showModal();$('file-body').scrollTop=0;update();}
+ const guard=document.createElement('dialog');guard.id='file-unsaved';guard.innerHTML='<h2>Hay cambios sin guardar</h2><p>Elegí qué hacer antes de salir de esta ficha.</p><button type="button" data-choice="save">Guardar y continuar</button><button type="button" data-choice="discard">Descartar cambios</button><button type="button" data-choice="stay">Seguir editando</button>';document.body.append(guard);
+ async function permit(){if(busy)return false;if(!dirty())return true;const choice=await new Promise(resolve=>{guard.querySelectorAll('button').forEach(b=>b.onclick=()=>{guard.close();resolve(b.dataset.choice);});guard.oncancel=e=>{e.preventDefault();guard.close();resolve('stay');};guard.showModal();});return choice==='discard'||choice==='save'&&await save();}
+ async function save(){if(busy||!form.reportValidity())return false;if(activeId&&!dirty())return true;busy=true;update();let savedId;
+  try{savedId=baseSave({preventDefault(){}});clearTimeout(syncTimeout);if(!savedId){failed=true;return false;}activeId=savedId;if(!order.includes(savedId))order.push(savedId);baseEdit(savedId);const ok=await performCloudSave();if(!ok){failed=true;return false;}stamp();return true;}
+  catch(e){failed=true;return false;}finally{busy=false;update();}
+ }
+ async function move(step,saveFirst=false){const index=order.indexOf(activeId),next=order[index+step];if(!next||busy)return;if(saveFirst?await save():await permit())open(next,false);}
+ async function close(){if(await permit())dialog.close();}
+ window.editMember=function(id){if(busy)return;if(dialog.open){void permit().then(ok=>{if(ok)open(id);});}else open(id);};
+ window.newMemberForm=function(focus=true){if(busy)return;if(dialog.open){void permit().then(ok=>{if(ok)open(null);});}else if(focus===false)baseNew(false);else open(null);};
+ window.saveMember=function(e){e.preventDefault();return save();};
+ $('file-prev').onclick=()=>move(-1);$('file-next').onclick=()=>move(1);$('file-save').onclick=save;$('file-save-next').onclick=()=>move(1,true);$('file-close').onclick=close;$('file-new').onclick=()=>open(null);$('file-open-first').onclick=()=>{const first=$('members-registry-list').querySelector('article[onclick^="openMemberDetail("]');const id=first?.getAttribute('onclick').match(/openMemberDetail\('([^']+)'\)/)?.[1]||membersRegistry[0]?.id;open(id);};
+ dialog.addEventListener('cancel',e=>{e.preventDefault();void close();});
+ form.addEventListener('input',update);form.addEventListener('change',update);form.addEventListener('click',()=>setTimeout(update,0));
+ window.addEventListener('beforeunload',e=>{if(dialog.open&&(dirty()||busy)){e.preventDefault();e.returnValue='';}});
 })();
 </script></body>
 </html>
