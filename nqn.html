@@ -5948,12 +5948,13 @@ ritualRoot.render(<LibroPastoralApp />);
   status('Consultando mapa en Firebase…');
   try{const response=await fetch(endpoint()+'?key='+encodeURIComponent(API_KEY));if(response.status===404){if(!pending){data=empty();stamp=null;}else if(stamp){status('El documento remoto cambió. Conservá un respaldo antes de resolver el conflicto.');return false;}loaded=true;persist();status(pending?'Cambios locales pendientes. Usá Sincronizar.':'Mapa nuevo · sin datos de prueba');return true;}
    if(!response.ok)throw Error('HTTP '+response.status);const doc=await response.json();const remote=valid(JSON.parse(doc.fields.mapData.stringValue));
+   if(pending&&JSON.stringify(remote)===JSON.stringify(data)){pending=false;stamp=doc.updateTime;}
    if(pending){if(stamp!==doc.updateTime){status('Conflicto: hay cambios en otro equipo. Descargá el respaldo; no se sobrescribió Firebase.');loaded=false;return false;}}
    else{data=remote;stamp=doc.updateTime;}loaded=true;persist();status(pending?'Cambios locales pendientes. Usá Sincronizar.':'Mapa sincronizado con Firebase');return true;
   }catch{loaded=false;status('Mapa sin conexión o acceso denegado. Los cambios quedan locales; verificá conexión y permisos de Firebase.');return false;}
  }
  async function push(){
-  if(busy||!pending)return;if(!loaded&&!(await pull()))return;
+  if(busy||!pending)return;if(!loaded&&!(await pull()))return;if(!pending)return;
   busy=true;const sent=revision,snapshot=copy(data);status('Guardado local · sincronizando mapa…');
   try{const query=new URLSearchParams({key:API_KEY});if(stamp)query.set('currentDocument.updateTime',stamp);else query.set('currentDocument.exists','false');
    const response=await fetch(endpoint()+'?'+query.toString(),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{mapData:{stringValue:JSON.stringify(snapshot)}}})});
