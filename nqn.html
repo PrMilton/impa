@@ -6019,8 +6019,14 @@ ritualRoot.render(<LibroPastoralApp />);
   });
   for(const person of people){
    const member=membersRegistry.find(m=>m.id===person.id),family=families.find(f=>f.id===person.familyId);
-   const separate=(member.relationships||[]).some(r=>r.sharesHousehold===false)||membersRegistry.some(m=>(m.relationships||[]).some(r=>r.personId===member.id&&r.sharesHousehold===false));
+   // A relative in another household does not cancel this member's own household.
+   // Check only links inside the current family; an explicit source link wins.
+   const peers=membersRegistry.filter(m=>m.id!==member.id&&m.familyName&&normalizePersonName(m.familyName)===normalizePersonName(member.familyName));
+   const links=peers.flatMap(peer=>[...(member.relationships||[]).filter(r=>r.personId===peer.id),...(peer.relationships||[]).filter(r=>r.personId===member.id)].map(r=>({...r,peerId:peer.id})));
+   const sourceLinks=links.filter(r=>r.peerId===family?.addressSourceId);
+   const separate=sourceLinks.some(r=>r.sharesHousehold===false)||(!sourceLinks.some(r=>r.sharesHousehold===true)&&links.some(r=>r.sharesHousehold===false));
    if(family&&!person.address&&person.lat==null&&person.lng==null&&!separate)Object.assign(person,{address:family.address,city:family.city,lat:family.lat,lng:family.lng,ownAddress:false,addressSourceId:family.addressSourceId});
+   else if(family&&!separate&&person.address&&normalizePersonName(person.address)===normalizePersonName(family.address)&&person.lat==null&&person.lng==null)Object.assign(person,{lat:family.lat,lng:family.lng,city:person.city||family.city});
   }
   return [...families,...people];
  }
@@ -6293,6 +6299,22 @@ ritualRoot.render(<LibroPastoralApp />);
  const fresh=window.newMemberForm;window.newMemberForm=function(){reset();return fresh.apply(this,arguments);};
  const logout=SurveyService.logout;SurveyService.logout=async function(){await logout();if(field.dataset.privateSurveyDni){field.value=membersRegistry.find(m=>m.id===document.getElementById('member-id').value)?.documentNumber||'';}reset();};
  reset();
+})();
+</script><script>(()=>{
+ const $=id=>document.getElementById(id),address=$('member-address'),location=$('member-map-location');
+ const note=document.createElement('p');note.id='member-household-location';note.setAttribute('role','status');note.style.cssText='font-size:14px;line-height:1.5;margin:10px 0';address.parentElement.append(note);
+ function inherited(){
+  const member=membersRegistry.find(m=>m.id===$('member-id').value);
+  if(!member||address.value.trim()||location.value.trim()||normalizePersonName($('member-family-name').value)!==normalizePersonName(member.familyName||''))return null;
+  const person=GestorCerca.getState().records.find(r=>r.id===member.id);
+  return person?.ownAddress===false&&(person.address||person.lat!=null&&person.lng!=null)?person:null;
+ }
+ function update(){const p=inherited();note.textContent=p?'Domicilio compartido del hogar: '+(p.address||p.lat+', '+p.lng)+'. Se utiliza automáticamente en el mapa. Completá los campos solo si vive en otro domicilio.':'';note.hidden=!p;}
+ const edit=window.editMember;window.editMember=function(){const result=edit.apply(this,arguments);update();return result;};
+ const fresh=window.newMemberForm;window.newMemberForm=function(){const result=fresh.apply(this,arguments);update();return result;};
+ const preview=window.previewMemberMap;window.previewMemberMap=function(){const p=inherited();if(!p)return preview.apply(this,arguments);const value=p.lat!=null&&p.lng!=null?p.lat+','+p.lng:p.address;window.open(memberMapUrl(value,''),'_blank','noopener,noreferrer');};
+ for(const field of [address,location,$('member-family-name')])field.addEventListener('input',update);
+ update();
 })();
 </script><script>(()=>{
  const $=id=>document.getElementById(id),form=$('member-form'),card=$('member-form-card');if(!form||!card)return;
