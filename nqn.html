@@ -2836,7 +2836,7 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
             renderRelationshipDraft();
         };
 
-        function memberMapUrl(memberOrLocation, fallbackAddress = '') {
+        function memberMapUrl(memberOrLocation, fallbackAddress = '') { if(typeof memberOrLocation === 'object' && typeof memberEffectiveLocation === 'function') memberOrLocation=memberEffectiveLocation(memberOrLocation);
             const raw = typeof memberOrLocation === 'string' ? memberOrLocation : (memberOrLocation?.mapLocation || memberOrLocation?.address || '');
             const location = String(raw || fallbackAddress || '').trim();
             if (!location) return '';
@@ -2989,8 +2989,8 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
                 hierarchyMode: document.getElementById('member-hierarchy-mode').value || 'manual',
                 under14: document.getElementById('member-under-14').checked,
                 phone: document.getElementById('member-phone').value.trim(),
-                address: titleCaseWords(document.getElementById('member-address').value.trim()),
-                mapLocation: document.getElementById('member-map-location').value.trim(),
+                address: document.getElementById('member-address').dataset.sharedHome ? (previous.address || '') : titleCaseWords(document.getElementById('member-address').value.trim()),
+                mapLocation: document.getElementById('member-map-location').dataset.sharedHome ? (previous.mapLocation || '') : document.getElementById('member-map-location').value.trim(),
                 documentType: document.getElementById('member-document-type').value,
                 documentNumber: document.getElementById('member-document-number').dataset.privateSurveyDni ? (previous.documentNumber || '') : document.getElementById('member-document-number').value.trim(),
                 joinDate: document.getElementById('member-join-date').value,
@@ -3284,7 +3284,7 @@ communionPrecision: document.getElementById('member-communion-precision').value,
         };
 
         window.openMemberDetail = function(id) {
-            const member = membersRegistry.find(item => item.id === id);
+            const originalMember = membersRegistry.find(item => item.id === id); const member = originalMember && memberEffectiveLocation(originalMember);
             if (!member) return;
             const roles = memberRoles(id);
             const age = calculateMemberAge(member.birthDate);
@@ -3308,7 +3308,7 @@ communionPrecision: document.getElementById('member-communion-precision').value,
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     ${detailValue('Nacimiento', member.birthDate, 'fa-cake-candles')}
                     ${member.phone ? `<div class="rounded-2xl border border-emerald-200 dark:border-emerald-900 p-3 bg-emerald-50 dark:bg-emerald-900/20"><p class="text-[9px] uppercase tracking-wider font-extrabold text-emerald-600"><i class="fab fa-whatsapp mr-1"></i>Teléfono / WhatsApp</p><a href="${escapeMemberHtml(memberWhatsAppUrl(member))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm font-extrabold text-emerald-700 dark:text-emerald-300 mt-1 hover:underline">${escapeMemberHtml(member.phone)} <i class="fas fa-arrow-up-right-from-square text-[10px]"></i></a>${(member.alternatePhones || []).length ? `<p class="text-[10px] text-slate-500 mt-1">Alternativos: ${escapeMemberHtml(member.alternatePhones.join(' · '))}</p>` : ''}</div>` : ''}
-                    ${detailValue('Domicilio', member.address, 'fa-location-dot')}
+                    ${detailValue(member.sharedHome ? 'Domicilio compartido del hogar' : 'Domicilio', member.address, 'fa-location-dot')}
                     ${(member.mapLocation || member.address) ? `<div class="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 p-3"><div class="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700 dark:text-emerald-300 mb-2"><i class="fas fa-map-location-dot mr-1"></i>Ubicación</div><a href="${escapeMemberHtml(memberMapUrl(member))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-300 hover:underline">Abrir en Google Maps <i class="fas fa-arrow-up-right-from-square"></i></a></div>` : ''}
                     ${detailValue('Documento', [member.documentType, member.documentNumber].filter(Boolean).join(' '), 'fa-id-card')}
                     ${detailValue('Grupo familiar', member.familyName, 'fa-people-roof')}
@@ -6325,19 +6325,25 @@ ritualRoot.render(<LibroPastoralApp />);
 })();
 </script><script>(()=>{
  const $=id=>document.getElementById(id),address=$('member-address'),location=$('member-map-location');
+ window.memberEffectiveLocation=function(member){
+  if(!member)return {};
+  const record=window.GestorCerca?.getState().records.find(r=>r.id===member.id);
+  if(!record)return {...member};
+  return {...member,address:record.address||member.address||'',mapLocation:record.lat!=null&&record.lng!=null?record.lat+','+record.lng:member.mapLocation||record.address||'',sharedHome:record.ownAddress===false};
+ };
  const note=document.createElement('p');note.id='member-household-location';note.setAttribute('role','status');note.style.cssText='font-size:14px;line-height:1.5;margin:10px 0';address.parentElement.append(note);
- function inherited(){
-  const member=membersRegistry.find(m=>m.id===$('member-id').value);
-  if(!member||address.value.trim()||location.value.trim()||normalizePersonName($('member-family-name').value)!==normalizePersonName(member.familyName||''))return null;
-  const person=GestorCerca.getState().records.find(r=>r.id===member.id);
-  return person?.ownAddress===false&&(person.address||person.lat!=null&&person.lng!=null)?person:null;
+ const own=document.createElement('button');own.type='button';own.textContent='Usar un domicilio propio';own.className='member-input';address.parentElement.append(own);
+ function reset(){for(const field of [address,location]){delete field.dataset.sharedHome;field.readOnly=false;}note.hidden=true;own.hidden=true;}
+ function load(){reset();const member=membersRegistry.find(m=>m.id===$('member-id').value);if(!member||member.address||member.mapLocation)return;
+  const resolved=memberEffectiveLocation(member);if(!resolved.sharedHome)return;
+  for(const [field,value] of [[address,resolved.address],[location,resolved.mapLocation]]){field.value=value||'';field.dataset.sharedHome='1';field.readOnly=true;}
+  note.textContent='Domicilio compartido de '+member.familyName+'. Se actualiza desde la dirección del hogar; no necesitás copiarlo en esta ficha.';note.hidden=false;own.hidden=false;
  }
- function update(){const p=inherited();note.textContent=p?'Domicilio compartido del hogar: '+(p.address||p.lat+', '+p.lng)+'. Se utiliza automáticamente en el mapa. Completá los campos solo si vive en otro domicilio.':'';note.hidden=!p;}
- const edit=window.editMember;window.editMember=function(){const result=edit.apply(this,arguments);update();return result;};
- const fresh=window.newMemberForm;window.newMemberForm=function(){const result=fresh.apply(this,arguments);update();return result;};
- const preview=window.previewMemberMap;window.previewMemberMap=function(){const p=inherited();if(!p)return preview.apply(this,arguments);const value=p.lat!=null&&p.lng!=null?p.lat+','+p.lng:p.address;window.open(memberMapUrl(value,''),'_blank','noopener,noreferrer');};
- for(const field of [address,location,$('member-family-name')])field.addEventListener('input',update);
- update();
+ own.onclick=()=>{reset();note.textContent='Ahora podés escribir un domicilio propio. Al guardar, esta ficha dejará de usar el domicilio compartido.';note.hidden=false;address.focus();};
+ $('member-family-name').addEventListener('input',()=>{if(address.dataset.sharedHome){address.value='';location.value='';reset();}});
+ const edit=window.editMember;window.editMember=function(){reset();const result=edit.apply(this,arguments);load();return result;};
+ const fresh=window.newMemberForm;window.newMemberForm=function(){reset();const result=fresh.apply(this,arguments);load();return result;};
+ reset();
 })();
 </script><script>(()=>{
  const $=id=>document.getElementById(id),controls={};
@@ -6378,7 +6384,7 @@ ritualRoot.render(<LibroPastoralApp />);
  // Private DNI is asynchronously loaded and must not mark the public form as edited.
  let numberBaseline='';
  function stamp(){baseline=snapshotWithoutDni();numberBaseline=$('member-document-number').value;failed=false;}
- function snapshotWithoutDni(){return JSON.stringify({fields:[...form.querySelectorAll('input[id],select[id],textarea[id]')].filter(el=>el.id!=='member-document-number').map(el=>[el.id,el.type==='checkbox'?el.checked:el.value]),relations:memberRelationshipDraft});}
+ function snapshotWithoutDni(){return JSON.stringify({fields:[...form.querySelectorAll('input[id],select[id],textarea[id]')].filter(el=>el.id!=='member-document-number').map(el=>[el.id,el.type==='checkbox'?el.checked:el.value,el.dataset.sharedHome||'']),relations:memberRelationshipDraft});}
  function dirty(){return failed||baseline!==snapshotWithoutDni()||(!$('member-document-number').dataset.privateSurveyDni&&$('member-document-number').value!==numberBaseline);}
  function sequence(id){
   const scope=document.querySelector('#member-detail-modal:not(.hidden)')||$('members-registry-list');
