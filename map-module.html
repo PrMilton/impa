@@ -1233,7 +1233,7 @@ real=parent.GestorCerca.getState();
 save=function(){const ok=parent.GestorCerca.save(state());if(ok)real=parent.GestorCerca.getState();return ok;};
 deleteRecord=function(){toast('Administrá las altas, bajas y vínculos desde Miembros del Gestor.');};
 const editLinkedRecord=editRecord;
-editRecord=function(type,id=''){if(!id){parent.GestorCerca.openMembers();return;}editLinkedRecord(type,id);const f=$('#record-form');f.elements.name.readOnly=true;for(const k of ['phone','ministry'])f.elements[k].readOnly=true;f.elements.familyId.disabled=true;$('#editor-title').textContent='Ubicación y coordinación · '+find(id).name;let note=f.querySelector('.registry-source-note');if(!note){note=document.createElement('p');note.className='registry-source-note banner';f.prepend(note);}note.textContent='La dirección y la ciudad se completan desde Miembros, incluida la ubicación para Google Maps. Confirmá el resultado de Google y guardá para calcular distancias; no hace falta volver a escribir el domicilio.';if(!Geo.valid(find(id))&&f.elements.address.value&&mapReady)$('#geocode').click();};
+editRecord=function(type,id=''){if(!id){parent.GestorCerca.openMembers();return;}editLinkedRecord(type,id);const f=$('#record-form');f.elements.name.readOnly=true;for(const k of ['phone','ministry'])f.elements[k].readOnly=true;f.elements.familyId.disabled=true;$('#editor-title').textContent='Ubicación y coordinación · '+find(id).name;let note=f.querySelector('.registry-source-note');if(!note){note=document.createElement('p');note.className='registry-source-note banner';f.prepend(note);}note.textContent='La dirección y la ciudad se completan desde Miembros, incluida la ubicación para Google Maps. Los domicilios precisos se ubican automáticamente. Si falta el punto, confirmá el resultado de Google y guardá.';if(find(id).addressSourceName)note.textContent+=' Domicilio familiar tomado de '+find(id).addressSourceName+'.';if(!Geo.valid(find(id))&&f.elements.address.value&&mapReady)$('#geocode').click();};
 const saveLinkedRecord=$('#record-form').onsubmit;
 $('#record-form').onsubmit=function(e){const f=e.target,old=find(f.elements.id.value),family=old?.familyId||'';f.elements.familyId.disabled=false;saveLinkedRecord(e);f.elements.familyId.disabled=true;if(old&&find(old.id))find(old.id).familyId=family;};
 const renderLinked=render;
@@ -1277,5 +1277,42 @@ renderLogistics=function(){const section=document.createElement('section');secti
 const combinedTasks=renderTasks;
 renderTasks=function(){if(ministryTab!=='traslados'){combinedTasks();return;}$('#workspace').innerHTML='<div class="ministry-tabs"><button id="back-unified-agenda">Agenda y visitas</button><button id="back-unified-groups">Equipos de Personal</button><button id="unified-cartelera">Cartelera</button></div>';$('#back-unified-agenda').onclick=()=>{ministryTab='agenda';renderTasks();};$('#back-unified-groups').onclick=()=>{ministryTab='comisiones';renderTasks();};$('#unified-cartelera').onclick=showCartelera;renderLogistics();};
 render();
+</script><script>// Resolve precise member addresses once per address per session. Family pins derive from their parent.
+(()=>{
+ const attempted=new Set();let running=false;
+ const signature=r=>JSON.stringify([r.address,r.city,r.lat,r.lng]);
+ function candidate(results){
+  if(results.length!==1)return null;const r=results[0],parts=r.address_components||[];
+  if(r.partial_match||!['ROOFTOP','RANGE_INTERPOLATED'].includes(r.geometry?.location_type)||!parts.some(p=>p.types.includes('street_number')))return null;
+  const locality=parts.find(p=>p.types.includes('locality'))?.long_name||'';
+  const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const city=['Neuquén','Cipolletti','Centenario','Plottier','Senillosa'].find(c=>normalize(c)===normalize(locality));
+  if(!city)return null;
+  return {lat:r.geometry.location.lat(),lng:r.geometry.location.lng(),city};
+ }
+ async function sync(){
+  if(running||!mapReady||document.querySelector('dialog[open]'))return;running=true;
+  try{
+   const entries=parent.GestorCerca.getState().records.filter(r=>r.type==='person'&&r.address&&!Geo.valid(r));
+   for(const entry of entries){
+    if(document.querySelector('dialog[open]')||!mapReady)break;
+    const stamp=signature(entry),key=entry.id+stamp;if(attempted.has(key))continue;attempted.add(key);
+    let point;try{const response=await new google.maps.Geocoder().geocode({address:[entry.address,entry.city,'Argentina'].filter(Boolean).join(', '),region:'ar',componentRestrictions:{country:'AR'},bounds:{south:-39.2,north:-38.6,west:-68.65,east:-67.8}});point=candidate(response.results);}catch(error){if(['OVER_QUERY_LIMIT','REQUEST_DENIED'].includes(error.code))break;continue;}
+    if(!point||document.querySelector('dialog[open]')){if(point)attempted.delete(key);continue;}
+    // Re-read after the request: never save a stale address or overwrite concurrent tasks.
+    const latest=parent.GestorCerca.getState(),current=latest.records.find(r=>r.id===entry.id);
+    if(!current||signature(current)!==stamp)continue;
+    Object.assign(current,point);
+    if(!parent.GestorCerca.save(latest))break;
+    real=parent.GestorCerca.getState();render();
+    await new Promise(resolve=>setTimeout(resolve,250));
+   }
+  }finally{running=false;}
+ }
+ const previous=render;
+ render=function(){previous();setTimeout(sync,0);};
+ window.GestorAutoLocation={candidate,sync};
+ setTimeout(sync,0);
+})();
 </script></body></html>
 
