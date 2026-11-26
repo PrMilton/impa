@@ -1196,71 +1196,36 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
 @media(max-width:1000px){#member-file-editor #member-form{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){#member-file-editor #member-form{grid-template-columns:1fr;padding:14px}#member-file-editor footer{gap:6px;padding:10px}#file-state{flex-basis:100%;order:-1}#member-file-editor h2{font-size:19px}#member-file-editor button{padding:9px;font-size:12px}}
 </style><style>#personnel-picker{width:min(760px,94vw);max-height:90vh;padding:24px;border:1px solid #64748b;border-radius:18px;background:#f1f5f9;color:#172334;overflow:auto} .dark #personnel-picker{background:#253447;color:#edf2f8}#personnel-picker::backdrop{background:#07111ccc}#personnel-picker header,#personnel-picker footer{display:flex;justify-content:space-between;gap:18px;align-items:center}#personnel-picker h2{font-size:24px;font-weight:700}#personnel-picker p{font-size:14px;line-height:1.6;margin:10px 0}#personnel-picker .pp-controls{display:grid;grid-template-columns:1fr 1fr;gap:14px}#personnel-picker select,#personnel-picker input[type=search]{display:block;width:100%;padding:10px;border:1px solid #718096;border-radius:8px;background:transparent;color:inherit}#personnel-picker option{background:#253447;color:#fff}#personnel-picker [hidden]{display:none!important}#pp-results{max-height:38vh;overflow:auto;margin:16px 0;border-block:1px solid #718096}#pp-results label{display:flex;align-items:center;gap:14px;padding:12px;border-bottom:1px solid #71809655;cursor:pointer}#pp-results small{display:block;opacity:.8;line-height:1.5}#pp-results input{width:20px;height:20px;flex-shrink:0}#pp-add,.pp-launch{padding:12px 16px;border:1px solid #7fa7be;border-radius:9px;font-weight:600;background:#c3d9e5;color:#172334}.pp-launch{margin:12px;font-size:14px}#pp-add:disabled{opacity:.5}#pp-status{font-size:14px}#pp-close{padding:8px}@media(max-width:600px){#personnel-picker .pp-controls{grid-template-columns:1fr}#personnel-picker{padding:16px}#personnel-picker footer{align-items:stretch;flex-direction:column}}
 </style><style>#vista-mayordomia{width:100%;padding:16px;overflow:auto;color:var(--ui-ink)}#mayordomia-frame{display:block;width:100%;height:calc(100dvh - 150px);min-height:580px;border:1px solid var(--ui-line);border-radius:14px;background:var(--ui-panel)}@media(max-width:650px){#vista-mayordomia{padding:10px}#mayordomia-frame{min-height:650px}}@media print{#vista-mayordomia{display:none!important}}
-</style><script id="impa-data-safety">/* Version checks and recoverable local history for the existing Firestore REST modules. */
+</style><script id="impa-data-safety">/* Version checks for the existing Firestore REST modules. */
 (()=>{
- const nativeFetch=window.fetch.bind(window), seen=new Map(), keys=new Map(), busy=new Set();
+ const nativeFetch=window.fetch.bind(window), seen=new Map(), busy=new Set();
  const pattern=/^https:\/\/firestore\.googleapis\.com\/v1\/projects\/(formulario-7d5cb|cartelera-pastoral-neuqu-cf1dd)\/databases\/\(default\)\/documents\/(congregacion_data\/(mainData|mapOrganization)|impa_accounting\/globalData|artifacts(?:\/[^/?]+)?|ritual_versions(?:\/[^/?]+)?)$/;
- const dbReady=new Promise((resolve,reject)=>{const r=indexedDB.open('impa-history-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('history',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
- dbReady.catch(()=>{});
- let device;try{device=localStorage.getItem('impa-history-device')||crypto.randomUUID();localStorage.setItem('impa-history-device',device);}catch{device='equipo sin identificar';}
- async function transaction(mode,fn){const db=await dbReady;return new Promise((resolve,reject)=>{const tx=db.transaction('history',mode),req=fn(tx.objectStore('history'));let value;req.onsuccess=()=>value=req.result;tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Respaldo interrumpido'));});}
- const all=()=>transaction('readonly',s=>s.getAll());
- async function record(url,doc,kind,extra={}){const row={id:crypto.randomUUID(),schema:1,at:new Date().toISOString(),device,url,kind,doc,...extra};await transaction('readwrite',s=>s.put(row));return row;}
- function detail(row){const f=row.doc?.fields||{};return f.name?.stringValue||f.ceremonyTitle?.stringValue||'Versión del módulo';}
- function label(url){return url.endsWith('/mainData')?'Miembros, Personal y Cartelera':url.endsWith('/mapOrganization')?'Mapa y organización':url.endsWith('/globalData')?'Mayordomía':url.includes('/artifacts')?'Peticiones':'Ritual';}
- function notify(message){let el=document.getElementById('data-safety-notice');if(!el){el=document.createElement('div');el.id='data-safety-notice';el.setAttribute('role','alert');el.style.cssText='position:fixed;bottom:20px;left:20px;right:20px;z-index:100000;padding:18px;background:#442e35;color:#fff;border-radius:12px;font:16px system-ui';document.body.append(el);}el.replaceChildren(document.createTextNode(message+' '));const b=document.createElement('button');b.textContent='Ver respaldos';b.onclick=open;el.append(b);const c=document.createElement('button');c.textContent='Cerrar';c.style.marginLeft='16px';c.onclick=()=>el.remove();el.append(c);}
+ function notify(message){let el=document.getElementById('data-safety-notice');if(!el){el=document.createElement('div');el.id='data-safety-notice';el.setAttribute('role','alert');el.style.cssText='position:fixed;bottom:20px;left:20px;right:20px;z-index:100000;padding:18px;background:#442e35;color:#fff;border-radius:12px;font:16px system-ui';document.body.append(el);}el.replaceChildren(document.createTextNode(message+' '));const c=document.createElement('button');c.textContent='Cerrar';c.style.marginLeft='16px';c.onclick=()=>el.remove();el.append(c);}
  function responseError(message,status=409){notify(message);return new Response(JSON.stringify({error:{message}}),{status,headers:{'Content-Type':'application/json'}});}
- async function observe(url,doc){if(!seen.has(url)){seen.set(url,doc);await record(url,doc,'Copia al abrir');}}
+ async function observe(url,doc){if(!seen.has(url))seen.set(url,doc);}
  window.fetch=async function(input,options={}){
   const u=new URL(typeof input==='string'?input:input.url,location.href),base=u.origin+u.pathname;
   if(!pattern.test(base))return nativeFetch(input,options);
-  if(u.searchParams.get('key'))keys.set(u.pathname.split('/')[3],u.searchParams.get('key'));
   const method=(options.method||'GET').toUpperCase();
   if(method==='GET'){
-   const r=await nativeFetch(input,options);if(r.ok){const d=await r.clone().json();try{if(d.documents){for(const doc of d.documents)await observe('https://firestore.googleapis.com/v1/'+doc.name,doc);}else if(d.fields)await observe(base,d);}catch{notify('No se pudo crear el respaldo local. Revisá el espacio del navegador antes de guardar.');}}else if(r.status===404)seen.set(base,null);return r;
+   const r=await nativeFetch(input,options);if(r.ok){const d=await r.clone().json();if(d.documents){for(const doc of d.documents)await observe('https://firestore.googleapis.com/v1/'+doc.name,doc);}else if(d.fields)await observe(base,d);}else if(r.status===404)seen.set(base,null);return r;
   }
   if(!['PATCH','DELETE','POST'].includes(method))return nativeFetch(input,options);
   if(busy.has(base))return responseError('Ya hay un guardado en curso. Esperá y reintentá.');busy.add(base);
   try{
-   const payload=options.body?JSON.parse(options.body):null;
-   await record(base,null,method==='DELETE'?'Solicitud de eliminación':'Propuesta de guardado',{attempt:payload});
    if(method!=='POST'){
     const check=new URL(base);check.searchParams.set('key',u.searchParams.get('key')||'');const r=await nativeFetch(check.href);if(!r.ok&&r.status!==404)throw Error('No se pudo consultar la versión actual.');const current=r.status===404?null:await r.json();
     const expected=u.searchParams.has('currentDocument.exists')?null:(u.searchParams.get('currentDocument.updateTime')||seen.get(base)?.updateTime);
     const expectsNew=u.searchParams.get('currentDocument.exists')==='false'||!expected&&seen.has(base)&&seen.get(base)===null;
-    await record(base,current,'Antes de '+(method==='DELETE'?'eliminar':'guardar'),{attempt:payload});
-    if(current?expectsNew||!expected||expected!==current.updateTime:!!expected)return responseError('Otro equipo modificó estos datos o falta cargar su versión. No se sobrescribió nada. Tu propuesta quedó en Respaldos; descargala antes de actualizar la página.');
+    if(current?expectsNew||!expected||expected!==current.updateTime:!!expected)return responseError('Otro equipo modificó estos datos o falta cargar su versión. No se sobrescribió nada. Tus cambios siguen en pantalla. Revisalos antes de recargar y volver a editar.');
     if(current)u.searchParams.set('currentDocument.updateTime',current.updateTime);else u.searchParams.set('currentDocument.exists','false');
-   }else await record(base,null,'Antes de crear',{attempt:payload});
+   }
    const r=await nativeFetch(u.href,options);
-   if(r.ok){const doc=method==='DELETE'?null:await r.clone().json();const target=doc?.name?'https://firestore.googleapis.com/v1/'+doc.name:base;seen.set(target,doc);await record(target,doc,method==='DELETE'?'Eliminado':'Guardado');}
-   else if([409,412].includes(r.status))notify('Se detectó un guardado simultáneo. Tu propuesta está en Respaldos; actualizá antes de volver a editar.');
+   if(r.ok){const doc=method==='DELETE'?null:await r.clone().json();const target=doc?.name?'https://firestore.googleapis.com/v1/'+doc.name:base;seen.set(target,doc);}
+   else if([409,412].includes(r.status))notify('Se detectó un guardado simultáneo. Tus cambios siguen en pantalla. Revisalos antes de recargar y volver a editar.');
    return r;
   }catch(e){return responseError('No se confirmó el guardado: '+e.message,503);}finally{busy.delete(base);}
  };
- function download(value,name){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
- function confirmRestore(message){return new Promise(resolve=>{const d=document.createElement('dialog');d.style.cssText='max-width:560px;padding:24px;border-radius:12px;background:#243244;color:white;font:16px/1.6 system-ui';const p=document.createElement('p');p.textContent=message;d.append(p);for(const [label,value] of [['Cancelar',false],['Confirmar restauración',true]]){const b=document.createElement('button');b.textContent=label;b.style.cssText='padding:12px;margin:8px;border:1px solid #94a3b8;border-radius:8px';b.onclick=()=>{d.remove();resolve(value);};d.append(b);}d.oncancel=e=>{e.preventDefault();d.remove();resolve(false);};document.body.append(d);d.showModal();});}
- async function restore(row){
-  if(!row.doc?.fields||typeof row.doc.fields!=='object'||!pattern.test(row.url))throw Error('Esta entrada no contiene una versión restaurable.');
-  const project=new URL(row.url).pathname.split('/')[3],key=keys.get(project);if(!key)throw Error('Primero abrí la pestaña correspondiente para conectar con su proyecto.');
-  if(!await confirmRestore('Se restaurará la versión completa de '+label(row.url)+' del '+new Date(row.at).toLocaleString()+'. Se respaldará la versión actual antes de reemplazarla.'))return;
-  const u=new URL(row.url);u.searchParams.set('key',key);const r=await nativeFetch(u.href);if(!r.ok&&r.status!==404)throw Error('No se pudo verificar la versión actual.');const current=r.status===404?null:await r.json();
-  if(current)u.searchParams.set('currentDocument.updateTime',current.updateTime);else u.searchParams.set('currentDocument.exists','false');
-  const saved=await window.fetch(u.href,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:row.doc.fields})});if(!saved.ok)throw Error('No se restauró. Revisá el aviso de guardado.');location.reload();
- }
- async function open(){
-  document.getElementById('data-safety-dialog')?.remove();const d=document.createElement('dialog');d.id='data-safety-dialog';d.style.cssText='width:min(900px,95vw);max-height:88vh;overflow:auto;padding:24px;background:var(--ui-panel,#243244);color:var(--ui-ink,#edf2f7);border:1px solid #64748b;border-radius:16px;font:16px system-ui';
-  const title=document.createElement('h2');title.textContent='Respaldos e historial';d.append(title);const text=document.createElement('p');text.textContent='Copias automáticas antes de guardar o eliminar, en este navegador. Descargalas periódicamente: borrar los datos del navegador elimina estas copias. El identificador de equipo no identifica a una persona. Encuestas: se recuperan desde Revisadas o Archivadas.';d.append(text);
-  const close=document.createElement('button');close.textContent='Cerrar';close.onclick=()=>d.close();d.append(close);document.body.append(d);d.showModal();
-  try{const rows=(await all()).sort((a,b)=>b.at.localeCompare(a.at));const exp=document.createElement('button');exp.textContent='Descargar historial';exp.style.margin='16px';exp.onclick=()=>download({schema:1,rows},'IMPA-respaldos-'+Date.now()+'.json');d.append(exp);
-   const full=document.createElement('button');full.textContent='Crear y descargar respaldo actual';full.onclick=async()=>{full.disabled=true;try{const project='formulario-7d5cb',key=keys.get(project);if(!key)throw Error('Esperá a que el gestor termine de cargar.');const copies=[];for(const path of ['congregacion_data/mainData','congregacion_data/mapOrganization','impa_accounting/globalData','artifacts','ritual_versions']){let token='';do{const u=new URL('https://firestore.googleapis.com/v1/projects/'+project+'/databases/(default)/documents/'+path);u.searchParams.set('key',key);if(token)u.searchParams.set('pageToken',token);const r=await nativeFetch(u.href);if(r.status===404)break;if(!r.ok)throw Error('No se pudo respaldar '+path);const data=await r.json();for(const doc of data.documents||(data.fields?[data]:[])){copies.push(await record('https://firestore.googleapis.com/v1/'+doc.name,doc,'Respaldo solicitado'));}token=data.nextPageToken||'';}while(token);}download({schema:1,rows:copies},'IMPA-respaldo-actual-'+Date.now()+'.json');d.close();open();}catch(e){alert(e.message);}finally{full.disabled=false;}};d.append(full);
-   const input=document.createElement('input');input.type='file';input.accept='.json';input.setAttribute('aria-label','Importar respaldo descargado');input.onchange=async()=>{try{const v=JSON.parse(await input.files[0].text());if(v.schema!==1||!Array.isArray(v.rows)||v.rows.some(r=>r.schema!==1||typeof r.id!=='string'||!pattern.test(r.url)||typeof r.at!=='string'))throw Error('Archivo no compatible');for(const row of v.rows)await transaction('readwrite',s=>s.put(row));d.close();open();}catch(e){alert(e.message);}};d.append(input);
-   const count=document.createElement('p');d.append(count);let page=0;const prev=document.createElement('button'),next=document.createElement('button');prev.textContent='Más recientes';next.textContent='Más antiguas';d.append(prev,next);const list=document.createElement('div');d.append(list);prev.onclick=()=>{page--;renderPage();};next.onclick=()=>{page++;renderPage();};function renderPage(){list.replaceChildren();count.textContent=rows.length+' entradas · Página '+(page+1)+' de '+Math.max(1,Math.ceil(rows.length/25));prev.disabled=page===0;next.disabled=(page+1)*25>=rows.length;
-   for(const row of rows.slice(page*25,(page+1)*25)){const box=document.createElement('section');box.style.cssText='padding:14px 0;border-top:1px solid #64748b';const p=document.createElement('p');p.textContent=label(row.url)+' · '+detail(row)+' · '+row.kind+' · '+new Date(row.at).toLocaleString()+' · equipo '+String(row.device).slice(0,8);box.append(p);const b=document.createElement('button');b.textContent='Descargar versión';b.onclick=()=>download({schema:1,rows:[row]},'IMPA-version-'+row.id+'.json');box.append(b);if(row.doc?.fields){const rb=document.createElement('button');rb.textContent='Restaurar versión';rb.style.marginLeft='16px';rb.onclick=()=>restore(row).catch(e=>alert(e.message));box.append(rb);}list.append(box);}}renderPage();
-  }catch(e){const p=document.createElement('p');p.textContent='No se pudo abrir el historial: '+e.message;d.append(p);}
- }
- window.ImpaSafety={open,record,all};
- document.addEventListener('DOMContentLoaded',()=>{const style=document.createElement('style');style.textContent='#data-safety-dialog h2{font-size:24px;font-weight:700;margin-bottom:12px}#data-safety-dialog p{line-height:1.6;margin:10px 0}#data-safety-dialog button{padding:9px 13px;margin:4px;border:1px solid #64748b;border-radius:8px;background:var(--ui-soft,#344459);color:inherit}#data-safety-dialog input{max-width:100%;margin:12px 0}';document.head.append(style);const b=document.createElement('button');b.type='button';b.textContent='Respaldos';b.onclick=open;b.style.cssText='width:auto;padding:8px 12px;border:1px solid #64748b;border-radius:8px;font:14px system-ui';const target=document.getElementById('tab-personal')?.parentElement||document.querySelector('.header-actions');target?.append(b);});
 })();
 </script></head>
 <body class="text-gray-800 bg-gray-100 dark:bg-gray-900 dark:text-gray-200 min-h-screen flex flex-col transition-colors duration-300">
@@ -2303,7 +2268,7 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
             mainDirty=true; const revision=mainRevision;
             isSaving = true;
             // Backup Local
-            try{localStorage.setItem('gestor_unified', JSON.stringify({lists, assignments, appData, membersRegistry}));}catch{isSaving=false;setSyncStatus('error');showToast('No se pudo conservar la copia local. Descargá un respaldo y revisá el almacenamiento.','error');return false;}
+            try{localStorage.setItem('gestor_unified', JSON.stringify({lists, assignments, appData, membersRegistry}));}catch{isSaving=false;setSyncStatus('error');showToast('No se pudo conservar la copia local. Revisá el espacio disponible del navegador.','error');return false;}
             
             const payload = {
                 fields: {
@@ -2345,7 +2310,7 @@ body>main{padding:12px 16px 24px!important;box-sizing:border-box}
 
         window.manualSync = function() {
             spinSyncIcon();
-            if(mainDirty){performCloudSave().then(ok=>showToast(ok?"Guardado confirmado":"Cambios pendientes: revisá Respaldos antes de actualizar",ok?"success":"error"));}else loadFromCloud(false);
+            if(mainDirty){performCloudSave().then(ok=>showToast(ok?"Guardado confirmado":"No se confirmó el guardado. Revisá el aviso antes de recargar.",ok?"success":"error"));}else loadFromCloud(false);
         };
 
         function setSyncStatus(status) {
@@ -4699,7 +4664,7 @@ communionPrecision: document.getElementById('member-communion-precision').value,
             };
 
             const removeRequest = async (id) => {
-                if (!window.confirm('¿Eliminar esta petición? Se guardará una copia recuperable en Respaldos de este navegador.')) return;
+                if (!window.confirm('¿Eliminar definitivamente esta petición?')) return;
                 setStatus('connecting');
                 try {
                     const response = await fetch(`${PETICIONES_BASE_URL}/${id}?key=${PETICIONES_API_KEY}&currentDocument.updateTime=${encodeURIComponent(requests.find(r=>r.id===id)?._updateTime||'')}`, { method: 'DELETE' });
@@ -6517,7 +6482,7 @@ ritualRoot.render(<LibroPastoralApp />);
  const oldRender=window.renderDashboard;window.renderDashboard=function(){for(const t of Object.values(appData.teams||{})){for(const c of [...(t.men||[]),...(t.women||[]),...(t.members||[]).flat()]){const name=c.personId&&model.label(c.personId,membersRegistry);if(name)c.name=name;}}const result=oldRender.apply(this,arguments);document.querySelectorAll('[data-team-card]').forEach(card=>{const b=document.createElement('button');b.type='button';b.className='pp-launch';b.textContent='+ Agregar desde Miembros';b.onclick=()=>openPersonnelPicker(card.dataset.teamCard);card.prepend(b);});return result;};renderDashboard();
 })();
 </script><script>(()=>{
- const url='mayordomia.html?v=8.8.0';
+ const url='mayordomia.html?v=8.8.1';
  const nav=document.getElementById('tab-personal').parentElement;
  const button=document.createElement('button');button.id='tab-mayordomia';button.type='button';button.className=document.getElementById('tab-personal').className;button.textContent='Mayordomía';button.onclick=()=>switchTab('mayordomia');document.getElementById('tab-peticiones').before(button);
  const section=document.createElement('section');section.id='vista-mayordomia';section.className='hidden';section.innerHTML='<div id="mayordomia-container"></div>';
