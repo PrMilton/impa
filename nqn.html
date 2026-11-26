@@ -6440,10 +6440,10 @@ ritualRoot.render(<LibroPastoralApp />);
  const oldRender=window.renderDashboard;window.renderDashboard=function(){for(const t of Object.values(appData.teams||{})){for(const c of [...(t.men||[]),...(t.women||[]),...(t.members||[]).flat()]){const name=c.personId&&model.label(c.personId,membersRegistry);if(name)c.name=name;}}const result=oldRender.apply(this,arguments);document.querySelectorAll('[data-team-card]').forEach(card=>{const b=document.createElement('button');b.type='button';b.className='pp-launch';b.textContent='+ Agregar desde Miembros';b.onclick=()=>openPersonnelPicker(card.dataset.teamCard);card.prepend(b);});return result;};renderDashboard();
 })();
 </script><script>(()=>{
- const url='https://impa-neuquen-contabilidad-milton.silver-vine-4499.chatgpt.site/';
+ const url='mayordomia.html?v=8.7.1';
  const nav=document.getElementById('tab-personal').parentElement;
  const button=document.createElement('button');button.id='tab-mayordomia';button.type='button';button.className=document.getElementById('tab-personal').className;button.textContent='Mayordomía';button.onclick=()=>switchTab('mayordomia');document.getElementById('tab-peticiones').before(button);
- const section=document.createElement('section');section.id='vista-mayordomia';section.className='hidden';section.innerHTML='<div class="mayordomia-header"><div><h2>Mayordomía</h2><p>Ingresos, egresos, cuotas, recibos e informe anual.</p></div><a id="mayordomia-open" target="_blank" rel="noopener noreferrer">Abrir Mayordomía en otra ventana ↗</a></div><p class="mayordomia-help">Usá la cuenta autorizada de CONTABILIDAD. Si necesitás iniciar sesión o imprimir, abrí Mayordomía en otra ventana. Al cambiar de pestaña, esta sesión permanece abierta.</p><div id="mayordomia-container"></div>';
+ const section=document.createElement('section');section.id='vista-mayordomia';section.className='hidden';section.innerHTML='<div class="mayordomia-header"><div><h2>Mayordomía</h2><p>Ingresos, egresos, cuotas, recibos e informe anual.</p></div><a id="mayordomia-open" target="_blank" rel="noopener noreferrer">Abrir Mayordomía en otra ventana</a></div><p class="mayordomia-help">Los movimientos se guardan en Firebase, en el mismo proyecto del gestor. Para imprimir, podés abrir Mayordomía en otra ventana.</p><div id="mayordomia-container"></div>';
  document.getElementById('vista-cerca').after(section);document.getElementById('mayordomia-open').href=url;
  let frame;
  const previous=switchTab;
